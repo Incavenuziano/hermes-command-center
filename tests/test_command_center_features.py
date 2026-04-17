@@ -437,6 +437,38 @@ def test_panic_stop_kills_processes_and_pauses_cron_jobs(tmp_path, monkeypatch):
     assert overview_payload['data']['cron_jobs'][0]['status'] == 'paused'
 
 
+def test_read_only_mode_blocks_mutating_operator_routes(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        mode_status, _, mode_payload = _request(server, '/ops/read-only', method='POST', json_body={'enabled': True, 'reason': 'maintenance'})
+        kill_status, _, kill_payload = _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+        cron_status, _, cron_payload = _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
+        panic_status, _, panic_payload = _request(server, '/ops/panic-stop', method='POST', json_body={})
+        read_status, _, read_payload = _request(server, '/ops/read-only')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert mode_status == 200
+    assert mode_payload['data']['enabled'] is True
+    assert kill_status == 423
+    assert kill_payload['error']['code'] == 'ops.read_only_mode'
+    assert cron_status == 423
+    assert cron_payload['error']['code'] == 'ops.read_only_mode'
+    assert panic_status == 423
+    assert panic_payload['error']['code'] == 'ops.read_only_mode'
+    assert read_status == 200
+    assert read_payload['data']['enabled'] is True
+    assert read_payload['data']['reason'] == 'maintenance'
+
+
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
     runtime_home = tmp_path / 'hermes-home'
     _write_runtime_fixture(runtime_home)

@@ -193,7 +193,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - panic stop emits derived-state events and append-only audit records
   - behavior documented in `docs/architecture/cost-governance.md`
 
-- M3-03 Read-only mode: NOT STARTED
+- M3-03 Read-only mode: DONE
+  - persistent read-only state implemented in `backend/read_only_mode.py`
+  - `GET/POST /ops/read-only` expose and update mode state
+  - mutating operator routes now return `423 ops.read_only_mode` when the mode is enabled
+  - behavior documented in `docs/architecture/read-only-mode.md`
 
 - M3-04 Cron backend routes and normalized contracts: PARTIAL
   - minimal cron control exists (pause/resume/run)

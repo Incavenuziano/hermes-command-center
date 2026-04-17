@@ -4,6 +4,7 @@ from audit_log import audit_log_store
 from auth import auth_manager
 from derived_state import derived_state_store
 from http_api import AuthenticationRequiredError, RequestValidationError, route
+from read_only_mode import read_only_mode_store
 from runtime_adapter import runtime_adapter
 
 
@@ -47,6 +48,12 @@ def _require_authenticated(handler) -> str:
     return session_id
 
 
+def _require_not_read_only() -> None:
+    state = read_only_mode_store.get_state()
+    if state.get('enabled'):
+        raise RequestValidationError(status=423, code='ops.read_only_mode', message='Read-only mode is enabled', details={'reason': state.get('reason')})
+
+
 @route('GET', '/ops/overview', allow=('GET',))
 def ops_overview(handler) -> None:
     _require_authenticated(handler)
@@ -87,9 +94,39 @@ def ops_session(handler) -> None:
     handler.send_data({'session': session})
 
 
+@route('GET', '/ops/read-only', allow=('GET',))
+def ops_read_only_state(handler) -> None:
+    _require_authenticated(handler)
+    handler.send_data(read_only_mode_store.get_state())
+
+
+@route('POST', '/ops/read-only', allow=('POST',))
+def ops_read_only_update(handler) -> None:
+    session_id = _require_authenticated(handler)
+    payload = handler.read_json_body()
+    enabled = payload.get('enabled')
+    reason = payload.get('reason')
+    if not isinstance(enabled, bool):
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='enabled must be a boolean', details={'field': 'enabled'})
+    if reason is not None and not isinstance(reason, str):
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='reason must be a string', details={'field': 'reason'})
+    state = read_only_mode_store.set_state(enabled=enabled, reason=reason)
+    audit_entry = _append_audit_entry(
+        handler,
+        session_id=session_id,
+        action_type='ops.read_only',
+        target_type='system',
+        target_id='global',
+        result='enabled' if enabled else 'disabled',
+        details=state,
+    )
+    handler.send_data({**state, 'audit_entry': audit_entry})
+
+
 @route('POST', '/ops/processes/kill', allow=('POST',))
 def ops_process_kill(handler) -> None:
     session_id = _require_authenticated(handler)
+    _require_not_read_only()
     payload = handler.read_json_body()
     process_id = payload.get('process_id')
     if not isinstance(process_id, str) or not process_id:
@@ -111,6 +148,7 @@ def ops_process_kill(handler) -> None:
 @route('POST', '/ops/panic-stop', allow=('POST',))
 def ops_panic_stop(handler) -> None:
     session_id = _require_authenticated(handler)
+    _require_not_read_only()
     handler.read_json_body()
     stopped_processes = []
     paused_jobs = []
@@ -145,6 +183,7 @@ def ops_panic_stop(handler) -> None:
 @route('POST', '/ops/cron/control', allow=('POST',))
 def ops_cron_control(handler) -> None:
     session_id = _require_authenticated(handler)
+    _require_not_read_only()
     payload = handler.read_json_body()
     job_id = payload.get('job_id')
     action = payload.get('action')

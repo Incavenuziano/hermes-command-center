@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M2 is now complete. Continue in the official M3 order:
 
-1. M3-01 — cost circuit breaker and per-agent telemetry
-2. M3-02 — panic stop global control
-3. M3-03 — read-only mode
+1. M3-04 — cron backend routes and normalized contracts
+2. M3-05 — cron page with run history/output inspection/guarded actions
+3. M3-06 — runs/activity timeline backend with retention and derived state
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.
