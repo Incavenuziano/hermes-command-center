@@ -517,6 +517,29 @@ def test_cron_backend_routes_expose_normalized_list_detail_and_history(tmp_path,
     assert history_payload['data']['count'] >= 0
 
 
+def test_runs_activity_timeline_supports_retention_and_kind_filter(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+        _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
+        timeline_status, _, timeline_payload = _request(server, '/ops/activity?kind_prefix=cron.&limit=5')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert timeline_status == 200
+    assert timeline_payload['data']['count'] >= 1
+    assert all(item['kind'].startswith('cron.') for item in timeline_payload['data']['items'])
+    assert timeline_payload['data']['retention']['max_items'] == 100
+
+
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
     runtime_home = tmp_path / 'hermes-home'
     _write_runtime_fixture(runtime_home)

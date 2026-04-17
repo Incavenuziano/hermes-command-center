@@ -209,9 +209,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - frontend cron page consumes normalized cron jobs/history routes and exposes guarded actions
   - UI scope documented in `docs/architecture/cron-page-ui.md`
 
-- M3-06 Runs/activity timeline backend with retention and derived state: PARTIAL
-  - event feed and persisted derived state exist
-  - no full runs/activity backend yet
+- M3-06 Runs/activity timeline backend with retention and derived state: DONE
+  - `GET /ops/activity` now exposes a filtered/limited derived-state timeline backend
+  - `GET /ops/events` shares the same filtering contract and retention metadata
+  - retention/documentation recorded in `docs/architecture/activity-timeline-backend.md`
 
 - M3-07 Runs/activity UI page with virtualization/drill-down: NOT STARTED
 

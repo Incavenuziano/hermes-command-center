@@ -52,9 +52,13 @@ class DerivedStateStore:
         }
         return deepcopy(self._overview)
 
-    def event_feed(self, *, limit: int = 20) -> dict[str, object]:
+    def event_feed(self, *, limit: int = 20, kind_prefix: str | None = None) -> dict[str, object]:
         self._ensure_current_store()
-        return {'items': deepcopy(self._events[:limit]), 'count': len(self._events)}
+        items = self._events
+        if kind_prefix:
+            items = [item for item in items if str(item.get('kind', '')).startswith(kind_prefix)]
+        bounded = deepcopy(items[:limit])
+        return {'items': bounded, 'count': len(bounded), 'retention': {'max_items': 100}}
 
     def ingest_event(self, event: dict[str, object]) -> dict[str, object]:
         self._ensure_current_store()

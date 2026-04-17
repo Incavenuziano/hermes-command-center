@@ -64,7 +64,31 @@ def ops_overview(handler) -> None:
 @route('GET', '/ops/events', allow=('GET',))
 def ops_events(handler) -> None:
     _require_authenticated(handler)
-    handler.send_data(derived_state_store.event_feed())
+    limit_raw = (handler.query_params.get('limit') or [None])[0]
+    kind_prefix = (handler.query_params.get('kind_prefix') or [None])[0]
+    if limit_raw is None:
+        limit = 20
+    else:
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
+    handler.send_data(derived_state_store.event_feed(limit=limit, kind_prefix=kind_prefix))
+
+
+@route('GET', '/ops/activity', allow=('GET',))
+def ops_activity(handler) -> None:
+    _require_authenticated(handler)
+    limit_raw = (handler.query_params.get('limit') or [None])[0]
+    kind_prefix = (handler.query_params.get('kind_prefix') or [None])[0]
+    if limit_raw is None:
+        limit = 20
+    else:
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
+    handler.send_data(derived_state_store.event_feed(limit=limit, kind_prefix=kind_prefix))
 
 
 @route('GET', '/ops/audit', allow=('GET',))
