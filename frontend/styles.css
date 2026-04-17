@@ -1,0 +1,118 @@
+:root {
+  color-scheme: dark;
+  --bg: #07110f;
+  --panel: #0f1e1b;
+  --border: #21433d;
+  --accent: #c9ab62;
+  --text: #ecf5f2;
+  --muted: #9ab1ab;
+  --danger: #d46f6f;
+  --success: #6eb89a;
+}
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #102622, var(--bg));
+  color: var(--text);
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+}
+.shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px;
+}
+.hero, .grid {
+  display: grid;
+  gap: 16px;
+}
+.hero {
+  grid-template-columns: 2fr 1fr;
+  align-items: start;
+}
+.stats {
+  grid-template-columns: repeat(4, 1fr);
+  margin: 24px 0;
+}
+.panels {
+  grid-template-columns: 1fr 1fr;
+}
+.panels-three {
+  grid-template-columns: repeat(3, 1fr);
+}
+article, .hero-card {
+  background: rgba(15, 30, 27, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-size: 12px;
+}
+h1, h2, p {
+  margin-top: 0;
+}
+.hero-card, .panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.item-card {
+  border: 1px solid rgba(201, 171, 98, 0.16);
+  background: rgba(7, 17, 15, 0.48);
+  border-radius: 12px;
+  padding: 12px;
+}
+.item-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.item-meta, .empty {
+  color: var(--muted);
+  font-size: 14px;
+}
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+button {
+  cursor: pointer;
+}
+#refresh-button, .action-button {
+  border: 1px solid var(--border);
+  background: rgba(201, 171, 98, 0.12);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.action-button.danger {
+  border-color: rgba(212, 111, 111, 0.4);
+  background: rgba(212, 111, 111, 0.12);
+}
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+  margin: 0;
+}
+@media (max-width: 1100px) {
+  .panels-three {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .hero, .stats, .panels {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,590 @@
+from __future__ import annotations
+
+import json
+import threading
+import time
+import urllib.error
+import urllib.request
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+BACKEND_DIR = PROJECT_ROOT / 'backend'
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
+from app import build_app, run_startup_checks  # noqa: E402
+
+
+def _start_test_server():
+    server = build_app(host='127.0.0.1', port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    time.sleep(0.05)
+    return server, thread
+
+
+def _request(
+    server,
+    path: str,
+    method: str = 'GET',
+    *,
+    json_body: dict | None = None,
+    raw_body: bytes | None = None,
+    headers: dict[str, str] | None = None,
+):
+    url = f'http://127.0.0.1:{server.server_address[1]}{path}'
+    request_headers = dict(headers or {})
+    body = raw_body
+    if json_body is not None:
+        body = json.dumps(json_body).encode('utf-8')
+        request_headers.setdefault('Content-Type', 'application/json')
+    request = urllib.request.Request(url, method=method, data=body, headers=request_headers)
+    try:
+        with urllib.request.urlopen(request, timeout=2) as response:
+            return response.status, response.headers, json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.headers, json.loads(exc.read().decode('utf-8'))
+
+
+def test_health_endpoint_returns_contract_headers_and_request_id():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(server, '/health')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'] == 'application/json; charset=utf-8'
+    assert headers['Cache-Control'] == 'no-store'
+    assert headers['X-Contract-Version'] == '2026-04-15'
+    assert headers['X-Request-ID']
+    assert payload['meta']['request_id'] == headers['X-Request-ID']
+    assert payload['meta']['contract_version'] == '2026-04-15'
+    assert payload['data']['overall_status'] == 'ok'
+    assert payload['data']['details']['mode'] == 'local-skeleton'
+
+
+def test_ready_endpoint_returns_readiness_payload():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(server, '/ready')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['X-Request-ID'] == payload['meta']['request_id']
+    assert payload['data'] == {
+        'ready': True,
+        'checks': {'runtime': 'ok', 'config': 'ok'},
+    }
+
+
+def test_system_info_endpoint_returns_service_identity():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/system/info')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['service'] == 'hermes-command-center'
+    assert payload['data']['transport'] == 'http'
+    assert payload['data']['auth_mode'] == 'local-trusted'
+
+
+def test_missing_route_returns_standard_error_envelope():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(server, '/missing')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 404
+    assert headers['X-Request-ID'] == payload['error']['request_id']
+    assert payload == {
+        'error': {
+            'code': 'route.not_found',
+            'message': 'Route not found',
+            'details': {'path': '/missing', 'method': 'GET'},
+            'request_id': headers['X-Request-ID'],
+        },
+        'meta': {
+            'request_id': headers['X-Request-ID'],
+            'contract_version': '2026-04-15',
+        },
+    }
+
+
+def test_unsupported_method_returns_method_not_allowed_error():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(server, '/health', method='POST')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 405
+    assert headers['Allow'] == 'GET'
+    assert payload['error']['code'] == 'route.method_not_allowed'
+    assert payload['error']['details'] == {'path': '/health', 'method': 'POST', 'allowed_methods': ['GET']}
+
+
+def test_inspect_endpoint_accepts_json_post_body():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(
+            server,
+            '/system/inspect',
+            method='POST',
+            json_body={'component': 'runtime', 'include_details': True},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['X-Request-ID'] == payload['meta']['request_id']
+    assert payload['data'] == {
+        'received': {'component': 'runtime', 'include_details': True},
+        'validated': True,
+        'content_type': 'application/json',
+    }
+
+
+def test_inspect_endpoint_rejects_invalid_json_body():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(
+            server,
+            '/system/inspect',
+            method='POST',
+            raw_body=b'{invalid',
+            headers={'Content-Type': 'application/json'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 400
+    assert headers['X-Request-ID'] == payload['error']['request_id']
+    assert payload['error']['code'] == 'request.invalid_json'
+    assert payload['error']['details']['content_type'] == 'application/json'
+
+
+def test_inspect_endpoint_requires_json_content_type():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/system/inspect',
+            method='POST',
+            raw_body=b'component=runtime',
+            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 415
+    assert payload['error']['code'] == 'request.unsupported_media_type'
+    assert payload['error']['details']['expected'] == 'application/json'
+
+
+def test_inspect_endpoint_rejects_large_payloads():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/system/inspect',
+            method='POST',
+            json_body={'blob': 'x' * 5000},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 413
+    assert payload['error']['code'] == 'request.payload_too_large'
+    assert payload['error']['details']['max_bytes'] == 4096
+
+
+def test_login_sets_session_cookie_and_returns_authenticated_identity():
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['authenticated'] is True
+    assert payload['data']['user'] == 'local-operator'
+    assert 'session_id=' in headers['Set-Cookie']
+    assert 'HttpOnly' in headers['Set-Cookie']
+    assert 'SameSite=Strict' in headers['Set-Cookie']
+
+
+def test_login_rejects_invalid_password():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'wrong-password'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 401
+    assert payload['error']['code'] == 'auth.invalid_credentials'
+
+
+def test_auth_session_defaults_to_trusted_local_operator_without_cookie():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/auth/session')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['authenticated'] is True
+    assert payload['data']['user'] == 'local-operator'
+    assert payload['data']['auth_mode'] == 'local-trusted'
+
+
+def test_auth_session_returns_active_session_after_login():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        status, _, payload = _request(server, '/auth/session', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert payload['data']['authenticated'] is True
+    assert payload['data']['user'] == 'local-operator'
+
+
+def test_logout_clears_session_cookie_and_revokes_session():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, login_payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        csrf_token = login_payload['data']['csrf_token']
+        logout_status, logout_headers, logout_payload = _request(
+            server,
+            '/auth/logout',
+            method='POST',
+            headers={
+                'Cookie': session_cookie,
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrf_token,
+            },
+            raw_body=b'{}',
+        )
+        session_status, _, session_payload = _request(server, '/auth/session', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert logout_status == 200
+    assert logout_payload['data']['authenticated'] is False
+    assert 'session_id=;' in logout_headers['Set-Cookie']
+    assert 'Max-Age=0' in logout_headers['Set-Cookie']
+    assert session_status == 200
+    assert session_payload['data']['authenticated'] is True
+    assert session_payload['data']['auth_mode'] == 'local-trusted'
+
+
+def test_login_rotates_existing_session_cookie():
+    server, thread = _start_test_server()
+    try:
+        first_status, first_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        first_cookie = first_headers['Set-Cookie'].split(';', 1)[0]
+        second_status, second_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+            headers={'Cookie': first_cookie},
+        )
+        second_cookie = second_headers['Set-Cookie'].split(';', 1)[0]
+        old_session_status, _, old_session_payload = _request(server, '/auth/session', headers={'Cookie': first_cookie})
+        new_session_status, _, new_session_payload = _request(server, '/auth/session', headers={'Cookie': second_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert first_status == 200
+    assert second_status == 200
+    assert first_cookie != second_cookie
+    assert old_session_status == 200
+    assert old_session_payload['data']['authenticated'] is True
+    assert old_session_payload['data']['auth_mode'] == 'local-trusted'
+    assert new_session_status == 200
+    assert new_session_payload['data']['authenticated'] is True
+
+
+def test_auth_session_rejects_expired_session(monkeypatch):
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        monkeypatch.setattr('auth.time.time', lambda: 10_000_000_000)
+        status, _, payload = _request(server, '/auth/session', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert payload['data']['authenticated'] is True
+    assert payload['data']['auth_mode'] == 'local-trusted'
+
+
+def test_login_sets_secure_cookie_outside_development(monkeypatch):
+    monkeypatch.setattr('config.ENV', 'production')
+    monkeypatch.setattr('auth.ENV', 'production')
+
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['authenticated'] is True
+    assert 'Secure' in headers['Set-Cookie']
+
+
+def test_authenticated_operator_route_returns_current_identity():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        status, _, payload = _request(server, '/operators/me', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert payload['data']['user'] == 'local-operator'
+    assert payload['data']['auth_mode'] == 'local-password'
+    assert payload['data']['session']['authenticated'] is True
+
+
+def test_operator_route_defaults_to_trusted_local_operator_without_authentication():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/operators/me')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['user'] == 'local-operator'
+    assert payload['data']['auth_mode'] == 'local-trusted'
+    assert payload['data']['session']['authenticated'] is True
+
+
+def test_logout_requires_matching_csrf_token():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        logout_status, _, logout_payload = _request(
+            server,
+            '/auth/logout',
+            method='POST',
+            headers={'Cookie': session_cookie, 'Content-Type': 'application/json'},
+            raw_body=b'{}',
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert logout_status == 403
+    assert logout_payload['error']['code'] == 'auth.csrf_token_required'
+
+
+def test_logout_accepts_matching_csrf_token():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, login_payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        csrf_token = login_payload['data']['csrf_token']
+        logout_status, logout_headers, logout_payload = _request(
+            server,
+            '/auth/logout',
+            method='POST',
+            headers={
+                'Cookie': session_cookie,
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrf_token,
+            },
+            raw_body=b'{}',
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert logout_status == 200
+    assert logout_payload['data']['authenticated'] is False
+    assert 'session_id=;' in logout_headers['Set-Cookie']
+
+
+def test_login_returns_csrf_token_for_authenticated_session():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert isinstance(payload['data']['csrf_token'], str)
+    assert payload['data']['csrf_token']
+
+
+def test_auth_session_returns_csrf_token():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        status, _, payload = _request(server, '/auth/session', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert isinstance(payload['data']['csrf_token'], str)
+    assert payload['data']['csrf_token']
+
+
+def test_startup_checks_report_root_refusal_without_override(monkeypatch):
+    monkeypatch.setattr('bootstrap.os.geteuid', lambda: 0)
+    monkeypatch.delenv('HCC_ALLOW_ROOT', raising=False)
+
+    errors = run_startup_checks()
+
+    assert errors == ['Refusing to run as root without HCC_ALLOW_ROOT=1']
+
+
+def test_startup_checks_report_non_loopback_bind_without_override(monkeypatch):
+    monkeypatch.setattr('bootstrap.HOST', '0.0.0.0')
+    monkeypatch.delenv('HCC_ALLOW_NON_LOOPBACK', raising=False)
+
+    errors = run_startup_checks()
+
+    assert 'Refusing non-loopback bind without HCC_ALLOW_NON_LOOPBACK=1' in errors
+
+
+def test_apply_runtime_posture_enforces_restrictive_umask(monkeypatch):
+    applied = {}
+
+    def fake_umask(mask):
+        applied['mask'] = mask
+        return 0o022
+
+    monkeypatch.setattr('bootstrap.os.umask', fake_umask)
+
+    from bootstrap import apply_runtime_posture
+
+    apply_runtime_posture()
+
+    assert applied == {'mask': 0o077}

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hermes Command Center</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Hermes Command Center</p>
+          <h1>Operational Control Plane</h1>
+          <p class="lede">Real Hermes runtime state, durable event history, and minimal operator actions over local/Tailscale access.</p>
+        </div>
+        <div class="hero-card">
+          <div id="auth-status">Checking session…</div>
+          <div id="generated-at"></div>
+          <button id="refresh-button" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="grid stats">
+        <article><h2>Agents</h2><p id="count-agents">—</p></article>
+        <article><h2>Sessions</h2><p id="count-sessions">—</p></article>
+        <article><h2>Processes</h2><p id="count-processes">—</p></article>
+        <article><h2>Cron Jobs</h2><p id="count-cron">—</p></article>
+      </section>
+
+      <section class="grid panels panels-three">
+        <article>
+          <div class="panel-header"><h2>Sessions</h2></div>
+          <ul id="sessions-list" class="item-list"></ul>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Processes</h2></div>
+          <ul id="processes-list" class="item-list"></ul>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Cron Jobs</h2></div>
+          <ul id="cron-list" class="item-list"></ul>
+        </article>
+      </section>
+
+      <section class="grid panels">
+        <article>
+          <div class="panel-header"><h2>Session Detail</h2></div>
+          <pre id="session-detail">Select a session to inspect details.</pre>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Recent Events</h2></div>
+          <ul id="events-list" class="item-list"></ul>
+        </article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

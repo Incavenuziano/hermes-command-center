@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-and-foundation-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run backend tests
+        run: python -m pytest tests/ -q
+
+      - name: Compile touched Python entrypoints
+        run: |
+          python -m py_compile \
+            backend/app.py \
+            backend/bootstrap.py \
+            backend/config.py \
+            backend/http_api.py \
+            backend/auth.py \
+            backend/routes/system.py \
+            backend/routes/auth.py \
+            backend/contracts/system.py \
+            backend/contracts/errors.py \
+            backend/contracts/auth.py \
+            scripts/verify_phase0_foundation.py
+
+      - name: Verify Phase 0 foundation snapshot
+        run: python scripts/verify_phase0_foundation.py
