@@ -346,7 +346,7 @@ def test_operator_actions_are_appended_to_audit_log_and_exposed_via_ops_audit(tm
     try:
         kill_status, _, kill_payload = _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
         cron_status, _, cron_payload = _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
-        audit_status, _, audit_payload = _request(server, '/ops/audit?limit=5')
+        audit_status, audit_headers, audit_payload = _request(server, '/ops/audit?limit=5')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -357,6 +357,8 @@ def test_operator_actions_are_appended_to_audit_log_and_exposed_via_ops_audit(tm
     assert kill_payload['data']['audit_entry']['action']['type'] == 'process.kill'
     assert cron_payload['data']['audit_entry']['action']['type'] == 'cron.pause'
     assert audit_status == 200
+    assert audit_headers['X-Request-ID'] == audit_payload['meta']['request_id']
+    assert audit_payload['meta']['contract_version'] == '2026-04-15'
     assert audit_payload['data']['count'] == 2
     assert [item['action']['type'] for item in audit_payload['data']['items']] == ['cron.pause', 'process.kill']
     assert audit_payload['data']['items'][0]['actor']['auth_mode'] == 'local-trusted'
@@ -412,7 +414,12 @@ def test_sse_stream_returns_event_stream_with_ids_and_heartbeat(tmp_path, monkey
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/event-stream')
+    assert headers['X-Contract-Version'] == '2026-04-15'
+    assert headers['X-Request-ID']
+    assert headers['X-Frame-Options'] == 'DENY'
+    assert headers['X-Content-Type-Options'] == 'nosniff'
     assert 'retry: 5000' in body
+    assert 'event: contract.meta' in body
     assert 'event: health.snapshot' in body
     assert 'event: process.kill_requested' in body
     assert 'id: ' in body

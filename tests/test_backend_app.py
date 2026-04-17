@@ -451,13 +451,15 @@ def test_authenticated_operator_route_returns_current_identity():
 def test_operator_route_defaults_to_trusted_local_operator_without_authentication():
     server, thread = _start_test_server()
     try:
-        status, _, payload = _request(server, '/operators/me')
+        status, headers, payload = _request(server, '/operators/me')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
+    assert headers['X-Request-ID'] == payload['meta']['request_id']
+    assert payload['meta']['contract_version'] == '2026-04-15'
     assert payload['data']['user'] == 'local-operator'
     assert payload['data']['auth_mode'] == 'local-trusted'
     assert payload['data']['session']['authenticated'] is True
@@ -562,6 +564,64 @@ def test_auth_session_returns_csrf_token():
     assert status == 200
     assert isinstance(payload['data']['csrf_token'], str)
     assert payload['data']['csrf_token']
+
+
+def test_passkey_status_reports_feature_configuration():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/auth/passkeys/status')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['available'] is True
+    assert payload['data']['credential_count'] == 0
+    assert payload['data']['required'] is False
+
+
+def test_passkey_registration_options_require_authenticated_session():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/auth/passkeys/register/options', method='POST', json_body={})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 401
+    assert payload['error']['code'] == 'auth.authentication_required'
+
+
+def test_passkey_registration_options_return_public_key_creation_options():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, login_payload = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        csrf_token = login_payload['data']['csrf_token']
+        status, _, payload = _request(
+            server,
+            '/auth/passkeys/register/options',
+            method='POST',
+            headers={'Cookie': session_cookie, 'Content-Type': 'application/json', 'X-CSRF-Token': csrf_token},
+            raw_body=b'{}',
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert isinstance(payload['data']['challenge_id'], str)
+    assert payload['data']['public_key']['rp']['name'] == 'Hermes Command Center'
+    assert payload['data']['public_key']['user']['name'] == 'local-operator'
 
 
 def test_startup_checks_report_root_refusal_without_override(monkeypatch):

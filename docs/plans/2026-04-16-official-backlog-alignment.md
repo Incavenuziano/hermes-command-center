@@ -16,7 +16,7 @@ The work done so far is not the official plan itself. The official roadmap is M0
 ## High-level milestone status
 
 - M0 — Foundation, Threat Model, and Performance Budgets: DONE (with one explicit accepted Tailscale auth exception recorded in docs)
-- M1 — Secure Skeleton, Contracts, and Event Bus: PARTIAL
+- M1 — Secure Skeleton, Contracts, and Event Bus: DONE (with accepted Tailscale/trusted-tailnet auth exception)
 - M2 — Dashboard, Chat MVP, and Approval-Safe Operation: PARTIAL (some dashboard/operator surface work landed early)
 - M3 — Operator Control Plane and Cost Governance: PARTIAL (some cron/process controls landed early)
 - M4 — Hermes Knowledge and Configuration Surfaces: NOT STARTED
@@ -90,10 +90,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - CSP, nosniff, frame denial, referrer policy, and permissions policy are documented in `docs/security/browser-hardening.md`
   - explicit-auth CSRF protections remain enforced, with trusted-local bypass limited to the accepted tailnet exception
 
-- M1-05 Canonical backend contracts for core surfaces: PARTIAL
-  - standard data/error envelopes exist
-  - contract versioning exists
-  - likely still incomplete versus all official core surfaces
+- M1-05 Canonical backend contracts for core surfaces: DONE
+  - canonical JSON success/error envelope and request-id semantics are documented in `docs/architecture/backend-contracts.md`
+  - core JSON surfaces are normalized on the shared `send_data` / `send_error_envelope` contract
+  - SSE core surface now emits `contract.meta` and shares contract/version/request-id semantics
 
 - M1-06 Hermes adapter layer for read-only summaries with degraded mode: DONE
   - `backend/runtime_adapter.py` reads real Hermes sessions/processes/cron state
@@ -110,7 +110,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - resolution order now supports env override, optional OS keyring, and explicit plaintext fallback with `0600` permissions
   - `/system/info` exposes only redacted backend summaries, and setup/degraded behavior is documented in `docs/security/secret-storage.md`
 
-- M1-10 WebAuthn/passkey optional second factor: NOT STARTED
+- M1-10 WebAuthn/passkey optional second factor: DONE
+  - optional passkey/WebAuthn backend shipped in `backend/passkeys.py` and `backend/routes/passkeys.py`
+  - status, registration, and authentication ceremony endpoints are available under `/auth/passkeys/*`
+  - current defaults, constraints, and security posture are documented in `docs/security/passkeys.md`
 
 - M1-11 Append-only operator audit log: DONE
   - SQLite-backed append-only audit log implemented in `backend/audit_log.py`

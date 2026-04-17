@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 
 from auth import auth_manager
+from config import CONTRACT_VERSION
 from derived_state import derived_state_store
 from event_bus import event_bus_store
-from http_api import AuthenticationRequiredError, RequestValidationError, route
+from http_api import AuthenticationRequiredError, RequestValidationError, SECURITY_HEADERS, route
 
 HEARTBEAT_MS = 5000
 
@@ -53,13 +54,17 @@ def ops_stream(handler) -> None:
     overview = derived_state_store.overview()
     body_parts = [
         _encode_sse_frame(
+            event='contract.meta',
+            data={'contract_version': CONTRACT_VERSION, 'transport': 'sse', 'channel': 'ops'},
+            retry_ms=HEARTBEAT_MS,
+        ),
+        _encode_sse_frame(
             event='health.snapshot',
             data={
                 'service': overview.get('service'),
                 'generated_at': overview.get('generated_at'),
                 'counts': overview.get('counts', {}),
             },
-            retry_ms=HEARTBEAT_MS,
         )
     ]
     for item in replay:
@@ -82,7 +87,9 @@ def ops_stream(handler) -> None:
     handler.send_header('Content-Length', str(len(body)))
     handler.send_header('Cache-Control', 'no-store')
     handler.send_header('Connection', 'close')
-    handler.send_header('X-Contract-Version', '2026-04-15')
+    handler.send_header('X-Contract-Version', CONTRACT_VERSION)
     handler.send_header('X-Request-ID', handler._request_id())
+    for header_name, header_value in SECURITY_HEADERS.items():
+        handler.send_header(header_name, header_value)
     handler.end_headers()
     handler.wfile.write(body)

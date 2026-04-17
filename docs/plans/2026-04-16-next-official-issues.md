@@ -8,25 +8,14 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-05 — Canonical backend contracts for core surfaces
-Status: OPEN
-Priority: P1
-Why next:
-- contracts exist, but all official core surfaces should be reaudited/normalized after the recent M1 additions
+### M2 entry unlocked
+M1 is now complete. Continue in the official M2 order:
 
-### 2. M1-10 — WebAuthn/passkey optional second factor
-Status: OPEN
-Priority: P2
-Why next:
-- still part of official M1 scope, but lower leverage than contracts alignment for the current single-user phase
-
-## After those M1 items
-Proceed in official order into M2:
-1. M2-05 approvals backend
-2. M2-06 approvals UI
-3. M2-04 Hermes-native chat streaming route/protocol
-4. M2-07 sessions/chat UI
-5. M2-02 dashboard completion against official scope
+1. M2-05 — approvals backend
+2. M2-06 — approvals UI
+3. M2-04 — Hermes-native chat streaming route/protocol
+4. M2-07 — sessions/chat UI
+5. M2-02 — dashboard completion against official scope
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.
