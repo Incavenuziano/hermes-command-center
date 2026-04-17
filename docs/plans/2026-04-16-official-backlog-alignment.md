@@ -204,9 +204,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - cron action history persists in `backend/cron_history.py`
   - backend contract documented in `docs/architecture/cron-backend-contracts.md`
 
-- M3-05 Cron page with run history/output inspection/guarded actions: PARTIAL
-  - cron UI exists in overview cards
-  - no dedicated page/history/output inspection yet
+- M3-05 Cron page with run history/output inspection/guarded actions: DONE
+  - dedicated `/cron` route added in `backend/routes/frontend.py`
+  - frontend cron page consumes normalized cron jobs/history routes and exposes guarded actions
+  - UI scope documented in `docs/architecture/cron-page-ui.md`
 
 - M3-06 Runs/activity timeline backend with retention and derived state: PARTIAL
   - event feed and persisted derived state exist

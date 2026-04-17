@@ -228,6 +228,23 @@ def test_agents_page_is_served_with_same_frontend_shell():
     assert 'agents-page-list' in body
 
 
+def test_cron_page_is_served_with_run_history_and_output_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/cron')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Cron Page' in body
+    assert 'cron-page-list' in body
+    assert 'cron-run-history' in body
+    assert 'cron-output-inspection' in body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -251,6 +268,10 @@ def test_frontend_javascript_bundle_is_served():
     assert 'chat-stream-status' in body
     assert 'renderAgentsPage' in body
     assert 'agents-page-list' in body
+    assert 'renderCronPage' in body
+    assert '/ops/cron/jobs' in body
+    assert '/ops/cron/history' in body
+    assert 'cron-run-history' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

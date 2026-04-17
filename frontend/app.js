@@ -331,6 +331,49 @@ function renderAgentsPage(agents, sessions, processes) {
   }
 }
 
+function renderCronPage(jobs, historyItems) {
+  const jobsRoot = clearRoot('cron-page-list');
+  const historyRoot = clearRoot('cron-run-history');
+  if (!jobs.length) {
+    renderEmpty(jobsRoot, 'No cron jobs yet');
+  } else {
+    for (const job of jobs) {
+      const li = document.createElement('li');
+      li.className = 'item-card';
+      const title = document.createElement('div');
+      title.className = 'item-title';
+      title.textContent = `${job.name} · ${job.status}`;
+      const meta = document.createElement('div');
+      meta.className = 'item-meta';
+      meta.textContent = `${job.schedule || 'manual'} · next ${job.next_run_at || 'n/a'}`;
+      const controls = document.createElement('div');
+      controls.className = 'actions-row';
+      controls.append(
+        actionButton('Inspect History', async () => {
+          const payload = await fetchJson(`/ops/cron/history?job_id=${encodeURIComponent(job.job_id)}`);
+          renderCronPage(jobs, payload.data.items || []);
+          setText('cron-output-inspection', JSON.stringify({ job, history: payload.data.items || [] }, null, 2));
+        }),
+        actionButton('Run', () => handleCronAction(job.job_id, 'run')),
+        actionButton(job.enabled ? 'Pause' : 'Resume', () => handleCronAction(job.job_id, job.enabled ? 'pause' : 'resume')),
+      );
+      li.append(title, meta, controls);
+      jobsRoot.appendChild(li);
+    }
+  }
+
+  if (!historyItems.length) {
+    renderEmpty(historyRoot, 'No cron history yet');
+    return;
+  }
+  for (const item of historyItems) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.textContent = `${item.recorded_at || 'n/a'} · ${item.job_id} · ${item.action} · ${item.status}`;
+    historyRoot.appendChild(li);
+  }
+}
+
 async function fetchOverview() {
   const session = await fetchJson('/auth/session');
   setText('auth-status', session.data.authenticated
@@ -341,6 +384,8 @@ async function fetchOverview() {
   const approvals = await fetchJson('/ops/approvals');
   const systemInfo = await fetchJson('/system/info');
   const health = await fetchJson('/health');
+  const cronJobs = await fetchJson('/ops/cron/jobs');
+  const cronHistory = await fetchJson('/ops/cron/history');
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
   setText('count-sessions', String(overview.data.counts.sessions));
@@ -354,6 +399,7 @@ async function fetchOverview() {
   renderApprovals(approvals.data.items || []);
   renderSystemHealth(systemInfo.data, health.data);
   renderAgentsPage(overview.data.agents || [], overview.data.sessions || [], overview.data.processes || []);
+  renderCronPage(cronJobs.data.items || [], cronHistory.data.items || []);
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;

@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M2 is now complete. Continue in the official M3 order:
 
-1. M3-05 — cron page with run history/output inspection/guarded actions
-2. M3-06 — runs/activity timeline backend with retention and derived state
-3. M3-07 — runs/activity UI page with virtualization/drill-down
+1. M3-06 — runs/activity timeline backend with retention and derived state
+2. M3-07 — runs/activity UI page with virtualization/drill-down
+3. M3-08 — process registry backend and guarded background-task controls
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

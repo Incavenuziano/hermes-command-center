@@ -16,6 +16,7 @@
           <nav class="nav-links">
             <a href="/">Dashboard</a>
             <a href="/agents">Agents Page</a>
+            <a href="/cron">Cron Page</a>
           </nav>
         </div>
         <div class="hero-card">
@@ -69,6 +70,21 @@
         <article>
           <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
           <ul id="agents-page-list" class="item-list"></ul>
+        </article>
+      </section>
+
+      <section id="cron-page-section" class="grid panels">
+        <article>
+          <div class="panel-header"><h2>Cron Page</h2><p class="panel-caption">Run history, output inspection, and guarded actions.</p></div>
+          <ul id="cron-page-list" class="item-list"></ul>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Cron Run History</h2></div>
+          <ul id="cron-run-history" class="item-list"></ul>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Cron Output Inspection</h2></div>
+          <pre id="cron-output-inspection">Select a cron job to inspect its latest output/history.</pre>
         </article>
       </section>
 
