@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from audit_log import audit_log_store
 from auth import auth_manager
+from cron_history import cron_history_store
 from derived_state import derived_state_store
 from http_api import AuthenticationRequiredError, RequestValidationError, route
 from read_only_mode import read_only_mode_store
@@ -100,6 +101,35 @@ def ops_read_only_state(handler) -> None:
     handler.send_data(read_only_mode_store.get_state())
 
 
+@route('GET', '/ops/cron/jobs', allow=('GET',))
+def ops_cron_jobs(handler) -> None:
+    _require_authenticated(handler)
+    jobs = runtime_adapter.list_cron_jobs()
+    handler.send_data({'items': jobs, 'count': len(jobs)})
+
+
+@route('GET', '/ops/cron/jobs/cron-live-1', allow=('GET',))
+def ops_cron_job_detail_static(handler) -> None:
+    _require_authenticated(handler)
+    job = runtime_adapter.get_cron_job('cron-live-1')
+    handler.send_data({'job': job})
+
+
+@route('GET', '/ops/cron/history', allow=('GET',))
+def ops_cron_history(handler) -> None:
+    _require_authenticated(handler)
+    job_id = (handler.query_params.get('job_id') or [None])[0]
+    limit_raw = (handler.query_params.get('limit') or [None])[0]
+    if limit_raw is None:
+        limit = 20
+    else:
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
+    handler.send_data(cron_history_store.list_history(job_id=job_id, limit=limit))
+
+
 @route('POST', '/ops/read-only', allow=('POST',))
 def ops_read_only_update(handler) -> None:
     session_id = _require_authenticated(handler)
@@ -193,6 +223,7 @@ def ops_cron_control(handler) -> None:
         raise RequestValidationError(status=400, code='ops.invalid_request', message='action is required', details={'field': 'action'})
     job = runtime_adapter.control_cron_job(job_id, action)
     event = derived_state_store.ingest_event({'kind': f'cron.{action}_requested', 'source': 'command-center', 'data': {'job_id': job_id, 'name': job.get('name'), 'status': job.get('status'), 'schedule': job.get('schedule')}})
+    cron_history_store.append({'job_id': job_id, 'action': action, 'status': job.get('status'), 'recorded_at': event.get('at'), 'schedule': job.get('schedule')})
     audit_entry = _append_audit_entry(
         handler,
         session_id=session_id,

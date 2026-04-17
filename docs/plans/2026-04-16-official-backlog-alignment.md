@@ -199,9 +199,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - mutating operator routes now return `423 ops.read_only_mode` when the mode is enabled
   - behavior documented in `docs/architecture/read-only-mode.md`
 
-- M3-04 Cron backend routes and normalized contracts: PARTIAL
-  - minimal cron control exists (pause/resume/run)
-  - likely not yet normalized to full official issue scope
+- M3-04 Cron backend routes and normalized contracts: DONE
+  - explicit cron routes now exist for list/detail/history in `backend/routes/operations.py`
+  - cron action history persists in `backend/cron_history.py`
+  - backend contract documented in `docs/architecture/cron-backend-contracts.md`
 
 - M3-05 Cron page with run history/output inspection/guarded actions: PARTIAL
   - cron UI exists in overview cards

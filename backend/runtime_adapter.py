@@ -194,6 +194,12 @@ class HermesRuntimeAdapter:
                 }
         raise RequestValidationError(status=404, code='ops.job_not_found', message='Cron job not found', details={'job_id': job_id})
 
+    def get_cron_job(self, job_id: str) -> dict[str, Any]:
+        for job in self.list_cron_jobs():
+            if job.get('job_id') == job_id:
+                return job
+        raise RequestValidationError(status=404, code='ops.job_not_found', message='Cron job not found', details={'job_id': job_id})
+
     def kill_process(self, process_id: str) -> dict[str, Any]:
         process = self.get_process(process_id)
         if process is None:

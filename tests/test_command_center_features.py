@@ -469,6 +469,33 @@ def test_read_only_mode_blocks_mutating_operator_routes(tmp_path, monkeypatch):
     assert read_payload['data']['reason'] == 'maintenance'
 
 
+def test_cron_backend_routes_expose_normalized_list_detail_and_history(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        list_status, _, list_payload = _request(server, '/ops/cron/jobs')
+        detail_status, _, detail_payload = _request(server, '/ops/cron/jobs/cron-live-1')
+        history_status, _, history_payload = _request(server, '/ops/cron/history?job_id=cron-live-1')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert list_status == 200
+    assert list_payload['data']['count'] == 1
+    assert list_payload['data']['items'][0]['job_id'] == 'cron-live-1'
+    assert detail_status == 200
+    assert detail_payload['data']['job']['job_id'] == 'cron-live-1'
+    assert detail_payload['data']['job']['status'] == 'scheduled'
+    assert history_status == 200
+    assert history_payload['data']['job_id'] == 'cron-live-1'
+    assert history_payload['data']['count'] >= 0
+
+
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
     runtime_home = tmp_path / 'hermes-home'
     _write_runtime_fixture(runtime_home)
