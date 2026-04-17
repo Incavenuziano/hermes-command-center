@@ -263,6 +263,23 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
     assert 'Load More Activity' in body
 
 
+def test_processes_page_is_served_with_registry_and_detail_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/processes')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Processes Page' in body
+    assert 'processes-page-list' in body
+    assert 'processes-page-detail' in body
+    assert 'processes-page-summary' in body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -295,6 +312,11 @@ def test_frontend_javascript_bundle_is_served():
     assert 'activity-page-list' in body
     assert 'activity-drilldown' in body
     assert 'activity-load-more' in body
+    assert 'renderProcessesPage' in body
+    assert '/ops/processes' in body
+    assert '/ops/processes/control' in body
+    assert 'processes-page-list' in body
+    assert 'processes-page-detail' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

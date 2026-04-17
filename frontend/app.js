@@ -153,6 +153,14 @@ async function handleProcessKill(processId) {
   await fetchOverview();
 }
 
+async function handleProcessControl(processId, action) {
+  await fetchJson('/ops/processes/control', {
+    method: 'POST',
+    body: JSON.stringify({ process_id: processId, action }),
+  });
+  await fetchOverview();
+}
+
 async function handleCronAction(jobId, action) {
   await fetchJson('/ops/cron/control', {
     method: 'POST',
@@ -215,6 +223,37 @@ function renderProcesses(items) {
     }
     root.appendChild(li);
   }
+}
+
+function renderProcessesPage(items) {
+  const root = clearRoot('processes-page-list');
+  setText('processes-page-summary', items.length ? `${items.length} process(es) in registry.` : 'No processes in registry.');
+  if (!items.length) {
+    renderEmpty(root, 'No processes yet');
+    setText('processes-page-detail', 'No process selected.');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = `${item.process_id} · ${item.status}`;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    meta.textContent = `${item.command || 'no command'} · pid ${item.pid ?? 'n/a'} · notify ${item.notify_on_complete ? 'on' : 'off'}`;
+    const controls = document.createElement('div');
+    controls.className = 'actions-row';
+    controls.append(actionButton('Inspect Process', () => {
+      setText('processes-page-detail', JSON.stringify(item, null, 2));
+    }));
+    if (item.status === 'running') {
+      controls.append(actionButton('Kill Process', () => handleProcessControl(item.process_id, 'kill'), 'danger'));
+    }
+    li.append(title, meta, controls);
+    root.appendChild(li);
+  }
+  setText('processes-page-detail', JSON.stringify(items[0], null, 2));
 }
 
 function renderCron(items) {
@@ -428,6 +467,7 @@ async function fetchOverview() {
   const health = await fetchJson('/health');
   const cronJobs = await fetchJson('/ops/cron/jobs');
   const cronHistory = await fetchJson('/ops/cron/history');
+  const processesRegistry = await fetchJson('/ops/processes');
   await loadActivityPage();
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
@@ -443,6 +483,7 @@ async function fetchOverview() {
   renderSystemHealth(systemInfo.data, health.data);
   renderAgentsPage(overview.data.agents || [], overview.data.sessions || [], overview.data.processes || []);
   renderCronPage(cronJobs.data.items || [], cronHistory.data.items || []);
+  renderProcessesPage(processesRegistry.data.items || []);
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;

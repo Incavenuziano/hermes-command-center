@@ -226,9 +226,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - guarded control endpoint currently accepts only explicit supported actions and rejects unsupported ones with `ops.invalid_action`
   - backend scope documented in `docs/architecture/process-registry-backend.md`
 
-- M3-09 Processes page before full terminal support: PARTIAL
-  - process listing exists inside main dashboard
-  - no dedicated processes page yet
+- M3-09 Processes page before full terminal support: DONE
+  - dedicated `/processes` route added in `backend/routes/frontend.py`
+  - frontend processes page consumes the explicit process registry backend from M3-08
+  - process detail drill-down and guarded kill action are available without exposing terminal features
+  - UI scope documented in `docs/architecture/processes-page-ui.md`
 
 - M3-10 Terminal strategy with explicit risk posture: NOT STARTED / PARTIAL doc-only
   - security docs mention posture, but no implemented terminal surface strategy for Command Center
