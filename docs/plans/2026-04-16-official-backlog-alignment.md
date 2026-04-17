@@ -15,7 +15,7 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ## High-level milestone status
 
-- M0 — Foundation, Threat Model, and Performance Budgets: PARTIAL
+- M0 — Foundation, Threat Model, and Performance Budgets: DONE (with one explicit accepted Tailscale auth exception recorded in docs)
 - M1 — Secure Skeleton, Contracts, and Event Bus: PARTIAL
 - M2 — Dashboard, Chat MVP, and Approval-Safe Operation: PARTIAL (some dashboard/operator surface work landed early)
 - M3 — Operator Control Plane and Cost Governance: PARTIAL (some cron/process controls landed early)
@@ -26,9 +26,13 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ### M0 — Foundation, Threat Model, and Performance Budgets
 
-- M0-01 Repository baseline and protections: PARTIAL
-  - Repo content and governance files exist locally (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CODEOWNERS`)
-  - GitHub-side settings like branch protection / labels / Dependabot were not verified from the local repo alone
+- M0-01 Repository baseline and protections: DONE
+  - Repo exists at `Incavenuziano/hermes-command-center`
+  - `main` is published and protected with PR review requirement + conversation resolution
+  - label taxonomy from the official backlog has been created
+  - governance/security files exist locally and are pushed (`README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CODEOWNERS`, issue templates, PR template, `LICENSE`)
+  - vulnerability alerts and automated security fixes were enabled via API
+  - secret scanning and push protection are enabled for the public repo
 
 - M0-02 Local project skeleton: DONE
   - `backend/`, `frontend/`, `docs/`, `tests/`, `scripts/`, `.github/` exist
@@ -39,9 +43,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
 - M0-04 Product vision and scope boundaries: DONE
   - `docs/product-vision.md` exists
 
-- M0-05 Security baseline: PARTIAL + DIVERGENT
+- M0-05 Security baseline: DONE WITH ACCEPTED EXCEPTION
   - `docs/security/baseline.md` exists
-  - divergence: official backlog says auth required for non-loopback exposure; current running app was intentionally changed to trusted-local/no-login by default for the Tailscale-exposed instance
+  - exception recorded in `docs/security/m0-05-tailscale-exception.md`
+  - divergence retained intentionally for the current Tailscale-exposed single-user runtime: trusted-local/no-login mode by explicit operator request
 
 - M0-06 Token-efficiency / low-idle-cost rules: DONE
   - `docs/architecture/token-efficiency.md` exists
@@ -53,8 +58,9 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - present: `docs/architecture/adr-0004-contract-versioning.md`
   - present: `docs/architecture/adr-0005-secret-storage.md`
 
-- M0-08 CI baseline quality gates: PARTIAL
-  - repository layout suggests CI baseline exists, but GitHub workflow coverage/behavior was not fully audited here
+- M0-08 CI baseline quality gates: DONE
+  - `.github/workflows/ci.yml` exists and runs backend tests, py_compile checks, and the Phase 0 verification script
+  - the same checks were re-run locally and passed during this audit
 
 - M0-09 Initial threat model: DONE
   - `docs/security/threat-model.md` exists
