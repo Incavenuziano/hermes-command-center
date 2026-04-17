@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M2 is now complete. Continue in the official M3 order:
 
-1. M3-07 — runs/activity UI page with virtualization/drill-down
-2. M3-08 — process registry backend and guarded background-task controls
-3. M3-09 — processes page before full terminal support
+1. M3-08 — process registry backend and guarded background-task controls
+2. M3-09 — processes page before full terminal support
+3. M3-10 — terminal strategy with explicit risk posture
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

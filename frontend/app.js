@@ -39,6 +39,8 @@ function actionButton(label, onClick, variant = 'secondary') {
 
 let activeChatStream = null;
 let activeSessionId = null;
+let activityPageLimit = 20;
+let latestActivityItems = [];
 
 async function loadSessionDetail(sessionId) {
   const payload = await fetchJson(`/ops/session?session_id=${encodeURIComponent(sessionId)}`);
@@ -255,6 +257,46 @@ function renderEvents(items) {
   }
 }
 
+function summarizeActivityItem(item) {
+  const data = item && typeof item.data === 'object' && item.data !== null ? item.data : {};
+  return data.process_id || data.job_id || data.session_id || data.status || item.source || 'detail unavailable';
+}
+
+function renderActivityPage(items, retention) {
+  latestActivityItems = Array.isArray(items) ? items : [];
+  const root = clearRoot('activity-page-list');
+  const maxItems = retention && typeof retention.max_items === 'number' ? retention.max_items : latestActivityItems.length;
+  setText('activity-window-summary', `Showing ${latestActivityItems.length} of ${maxItems} retained event(s). Window size ${activityPageLimit}.`);
+  if (!latestActivityItems.length) {
+    renderEmpty(root, 'No activity events yet');
+    setText('activity-drilldown', 'No activity item selected.');
+    return;
+  }
+  for (const item of latestActivityItems) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = `${item.at || 'n/a'} · ${item.kind}`;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    meta.textContent = `${item.source || 'unknown'} · ${summarizeActivityItem(item)}`;
+    const controls = document.createElement('div');
+    controls.className = 'actions-row';
+    controls.append(actionButton('Inspect Event', () => {
+      setText('activity-drilldown', JSON.stringify(item, null, 2));
+    }));
+    li.append(title, meta, controls);
+    root.appendChild(li);
+  }
+  setText('activity-drilldown', JSON.stringify(latestActivityItems[0], null, 2));
+}
+
+async function loadActivityPage() {
+  const payload = await fetchJson(`/ops/activity?limit=${encodeURIComponent(activityPageLimit)}`);
+  renderActivityPage(payload.data.items || [], payload.data.retention || {});
+}
+
 function renderApprovals(items) {
   const root = clearRoot('approvals-list');
   const pendingCount = items.filter(item => item.status === 'pending').length;
@@ -386,6 +428,7 @@ async function fetchOverview() {
   const health = await fetchJson('/health');
   const cronJobs = await fetchJson('/ops/cron/jobs');
   const cronHistory = await fetchJson('/ops/cron/history');
+  await loadActivityPage();
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
   setText('count-sessions', String(overview.data.counts.sessions));
@@ -416,6 +459,13 @@ async function fetchOverview() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('activity-load-more').addEventListener('click', () => {
+    activityPageLimit += 20;
+    loadActivityPage().catch(error => {
+      setText('activity-window-summary', error.message);
+    });
+  });
+
   document.getElementById('refresh-button').addEventListener('click', () => {
     fetchOverview().catch(error => {
       setText('auth-status', error.message);

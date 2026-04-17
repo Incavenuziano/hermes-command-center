@@ -17,6 +17,7 @@
             <a href="/">Dashboard</a>
             <a href="/agents">Agents Page</a>
             <a href="/cron">Cron Page</a>
+            <a href="/activity">Activity Page</a>
           </nav>
         </div>
         <div class="hero-card">
@@ -85,6 +86,20 @@
         <article>
           <div class="panel-header"><h2>Cron Output Inspection</h2></div>
           <pre id="cron-output-inspection">Select a cron job to inspect its latest output/history.</pre>
+        </article>
+      </section>
+
+      <section id="activity-page-section" class="grid panels">
+        <article>
+          <div class="panel-header"><h2>Activity Page</h2><p id="activity-window-summary" class="panel-caption">Loading activity timeline…</p></div>
+          <ul id="activity-page-list" class="item-list"></ul>
+          <div class="actions-row">
+            <button id="activity-load-more" type="button">Load More Activity</button>
+          </div>
+        </article>
+        <article>
+          <div class="panel-header"><h2>Activity Drill-Down</h2><p class="panel-caption">Select an activity item to inspect its event payload.</p></div>
+          <pre id="activity-drilldown">Select an activity item to inspect details.</pre>
         </article>
       </section>
 

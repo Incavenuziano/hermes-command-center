@@ -214,7 +214,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - `GET /ops/events` shares the same filtering contract and retention metadata
   - retention/documentation recorded in `docs/architecture/activity-timeline-backend.md`
 
-- M3-07 Runs/activity UI page with virtualization/drill-down: NOT STARTED
+- M3-07 Runs/activity UI page with virtualization/drill-down: DONE
+  - dedicated `/activity` route added in `backend/routes/frontend.py`
+  - frontend activity page renders a bounded timeline window from `GET /ops/activity`
+  - drill-down panel inspects normalized event payloads without leaving the page
+  - UI scope documented in `docs/architecture/activity-page-ui.md`
 
 - M3-08 Process registry backend and guarded background-task controls: PARTIAL
   - process surface and kill control exist

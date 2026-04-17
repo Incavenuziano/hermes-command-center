@@ -245,6 +245,24 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
     assert 'cron-output-inspection' in body
 
 
+def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/activity')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Activity Page' in body
+    assert 'activity-page-list' in body
+    assert 'activity-drilldown' in body
+    assert 'activity-window-summary' in body
+    assert 'Load More Activity' in body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -272,6 +290,11 @@ def test_frontend_javascript_bundle_is_served():
     assert '/ops/cron/jobs' in body
     assert '/ops/cron/history' in body
     assert 'cron-run-history' in body
+    assert 'renderActivityPage' in body
+    assert '/ops/activity' in body
+    assert 'activity-page-list' in body
+    assert 'activity-drilldown' in body
+    assert 'activity-load-more' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():
