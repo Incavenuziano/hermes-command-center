@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from config import DATA_DIR, ensure_directories
+from event_bus import event_bus_store
 
 
 AUDIT_LOG_SCHEMA_VERSION = 1
@@ -96,7 +97,14 @@ class AuditLogStore:
             )
             conn.commit()
             entry_id = cursor.lastrowid
-        return self.get_entry(entry_id)
+        record = self.get_entry(entry_id)
+        event_bus_store.append(
+            event_type='audit.entry',
+            source='command-center',
+            channel='audit',
+            payload=deepcopy(record),
+        )
+        return record
 
     def get_entry(self, entry_id: int) -> dict[str, object]:
         self._ensure_current_store()

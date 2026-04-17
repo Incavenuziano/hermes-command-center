@@ -391,6 +391,55 @@ def test_audit_log_is_append_only_at_sqlite_layer(tmp_path, monkeypatch):
     assert kill_payload['data']['audit_entry']['action']['result'] == 'termination_requested'
 
 
+def test_sse_stream_returns_event_stream_with_ids_and_heartbeat(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+        status, headers, body = _request(server, '/ops/stream')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/event-stream')
+    assert 'retry: 5000' in body
+    assert 'event: health.snapshot' in body
+    assert 'event: process.kill_requested' in body
+    assert 'id: ' in body
+    assert ': heartbeat' in body
+
+
+def test_sse_stream_replays_only_events_after_last_event_id(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        first_status, _, first_payload = _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+        _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
+        last_event_id = first_payload['data']['event']['event_id']
+        stream_status, _, stream_body = _request(server, '/ops/stream', headers={'Last-Event-ID': str(last_event_id)})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert first_status == 200
+    assert stream_status == 200
+    assert 'event: cron.pause_requested' in stream_body
+    assert 'event: process.kill_requested' not in stream_body
+
+
 def test_runtime_event_ingest_updates_derived_state_and_feed():
     server, thread = _start_test_server()
     try:

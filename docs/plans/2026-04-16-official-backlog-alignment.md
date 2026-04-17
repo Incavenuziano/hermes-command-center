@@ -115,8 +115,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - destructive operator actions now append immutable records and expose them via `GET /ops/audit`
   - tests cover append/read behavior and SQLite-level tamper resistance triggers
 
-- M1-12 Unified multiplexed SSE event bus: NOT STARTED
-  - current implementation uses HTTP read surfaces and persisted events, not unified SSE
+- M1-12 Unified multiplexed SSE event bus: DONE
+  - unified SSE stream implemented at `GET /ops/stream`
+  - SQLite-backed event bus implemented in `backend/event_bus.py` with integer event IDs and replay via `Last-Event-ID`
+  - health snapshot, operational events, and audit events now share one stream contract documented in `docs/architecture/sse-event-bus.md`
 
 - M1-13 Schema migration framework: NOT STARTED / PARTIAL at best
   - no dedicated Command Center migration framework audited yet

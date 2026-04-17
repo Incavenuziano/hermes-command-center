@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from config import DATA_DIR, SERVICE_NAME, ensure_directories
+from event_bus import event_bus_store
 from runtime_adapter import runtime_adapter
 
 
@@ -63,6 +64,13 @@ class DerivedStateStore:
             'at': _now_iso(),
             'data': deepcopy(event.get('data', {})),
         }
+        bus_event = event_bus_store.append(
+            event_type=str(item['kind']),
+            source=str(item['source']),
+            channel='ops',
+            payload={'at': item['at'], 'data': deepcopy(item['data'])},
+        )
+        item['event_id'] = bus_event['event_id']
         self._events.insert(0, item)
         self._events = self._events[:100]
         self._save()

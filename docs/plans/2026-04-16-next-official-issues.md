@@ -8,27 +8,7 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-12 — Implement unified multiplexed SSE event bus
-Status: OPEN
-Priority: P1
-Why next:
-- official architectural requirement
-- current UI relies on pull/read surfaces only
-- SSE bus is foundation for dashboard freshness, approvals, chat stream, and process/cron updates
-
-Scope:
-- define SSE endpoint and event envelope
-- assign event IDs and reconnect strategy
-- multiplex health/runtime/cron/process/audit events on one stream
-- keep idle overhead within performance budgets
-- add smoke tests and reconnect behavior tests
-
-Suggested deliverables:
-- `backend/routes/events.py` or equivalent
-- SSE contract doc update
-- tests for initial connect, heartbeat, and event replay/reconnect behavior
-
-### 2. M1-09 — Implement secret storage strategy
+### 1. M1-09 — Implement secret storage strategy
 Status: OPEN
 Priority: P1
 Why next:
@@ -47,7 +27,7 @@ Suggested deliverables:
 - tests for redaction and storage behavior
 - doc update in security/setup docs
 
-### 3. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
+### 2. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
 Status: OPEN (DECISION REQUIRED)
 Priority: P1
 Why next:
