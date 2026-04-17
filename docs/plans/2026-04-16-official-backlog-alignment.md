@@ -165,7 +165,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - pending approvals summary and quick-decision controls are shipped in the current minimal frontend
   - UI scope is documented in `docs/architecture/approvals-ui.md`
 
-- M2-07 Sessions/chat UI with streaming and transcript handling: NOT STARTED
+- M2-07 Sessions/chat UI with streaming and transcript handling: DONE
+  - dashboard now includes a real `Chat Transcript` panel in `frontend/index.html`
+  - frontend transcript/stream handling implemented in `frontend/app.js`
+  - transcript cards render normalized messages, tool calls, and tool results
+  - UI scope documented in `docs/architecture/sessions-chat-ui.md`
 
 - M2-08 Agents page MVP with multi-agent summaries/quick actions: PARTIAL
   - agent summary appears in overview, but no dedicated agents page MVP yet

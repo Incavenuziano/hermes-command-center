@@ -111,6 +111,24 @@ pre {
   color: var(--muted);
   margin: 0;
 }
+.chat-message {
+  display: grid;
+  gap: 6px;
+}
+.chat-role {
+  color: var(--accent);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.chat-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.chat-tools {
+  color: var(--muted);
+  font-size: 13px;
+}
 @media (max-width: 1100px) {
   .panels-three {
     grid-template-columns: 1fr;

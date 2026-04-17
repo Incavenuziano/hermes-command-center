@@ -37,9 +37,85 @@ function actionButton(label, onClick, variant = 'secondary') {
   return button;
 }
 
+let activeChatStream = null;
+let activeSessionId = null;
+
 async function loadSessionDetail(sessionId) {
   const payload = await fetchJson(`/ops/session?session_id=${encodeURIComponent(sessionId)}`);
   setText('session-detail', JSON.stringify(payload.data.session, null, 2));
+}
+
+function renderChatTranscript(items) {
+  const root = clearRoot('chat-transcript');
+  if (!items.length) {
+    renderEmpty(root, 'No transcript messages yet');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card chat-message';
+    const role = document.createElement('div');
+    role.className = 'chat-role';
+    role.textContent = `${item.message_id}. ${item.role || 'unknown'}`;
+    const content = document.createElement('div');
+    content.className = 'chat-content';
+    content.textContent = item.content || '(empty)';
+    li.append(role, content);
+    if (Array.isArray(item.tool_calls) && item.tool_calls.length) {
+      const tools = document.createElement('div');
+      tools.className = 'chat-tools';
+      tools.textContent = `Tool calls: ${item.tool_calls.map(call => call.name || call.id || 'tool').join(', ')}`;
+      li.append(tools);
+    }
+    if (item.tool_call_id) {
+      const toolResult = document.createElement('div');
+      toolResult.className = 'chat-tools';
+      toolResult.textContent = `Tool result for: ${item.tool_call_id}`;
+      li.append(toolResult);
+    }
+    root.appendChild(li);
+  }
+}
+
+function closeChatStream() {
+  if (activeChatStream) {
+    activeChatStream.close();
+    activeChatStream = null;
+  }
+}
+
+function setChatSummary(session, count) {
+  const parts = [session.platform || 'unknown platform', session.model || 'unknown model', `${count} message(s)`];
+  setText('chat-session-summary', parts.join(' · '));
+}
+
+function openChatStream(sessionId) {
+  closeChatStream();
+  activeChatStream = new EventSource(`/ops/chat/stream?session_id=${encodeURIComponent(sessionId)}`);
+  setText('chat-stream-status', 'Streaming live transcript…');
+
+  activeChatStream.addEventListener('chat.session', event => {
+    const payload = JSON.parse(event.data);
+    setChatSummary(payload, payload.message_count || 0);
+  });
+
+  activeChatStream.addEventListener('chat.message', () => {
+    loadChatTranscript(sessionId).catch(error => {
+      setText('chat-stream-status', error.message);
+    });
+  });
+
+  activeChatStream.onerror = () => {
+    setText('chat-stream-status', 'Chat stream disconnected.');
+    closeChatStream();
+  };
+}
+
+async function loadChatTranscript(sessionId) {
+  const payload = await fetchJson(`/ops/chat/transcript?session_id=${encodeURIComponent(sessionId)}`);
+  setChatSummary(payload.data.session, payload.data.count || 0);
+  renderChatTranscript(payload.data.items || []);
+  setText('chat-stream-status', `Transcript loaded for ${sessionId}`);
 }
 
 async function handleProcessKill(processId) {
@@ -81,7 +157,12 @@ function renderSessions(items) {
     const meta = document.createElement('div');
     meta.className = 'item-meta';
     meta.textContent = `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`;
-    li.append(title, meta, actionButton('Inspect', () => loadSessionDetail(item.session_id)));
+    li.append(title, meta, actionButton('Inspect', async () => {
+      activeSessionId = item.session_id;
+      await loadSessionDetail(item.session_id);
+      await loadChatTranscript(item.session_id);
+      openChatStream(item.session_id);
+    }));
     root.appendChild(li);
   }
 }
@@ -208,9 +289,16 @@ async function fetchOverview() {
   renderApprovals(approvals.data.items || []);
 
   if ((overview.data.sessions || []).length) {
-    await loadSessionDetail(overview.data.sessions[0].session_id);
+    activeSessionId = overview.data.sessions[0].session_id;
+    await loadSessionDetail(activeSessionId);
+    await loadChatTranscript(activeSessionId);
+    openChatStream(activeSessionId);
   } else {
+    closeChatStream();
     setText('session-detail', 'No session selected.');
+    setText('chat-stream-status', 'No session selected.');
+    setText('chat-session-summary', 'Select a session to load transcript.');
+    renderChatTranscript([]);
   }
 }
 
@@ -223,5 +311,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   fetchOverview().catch(error => {
     setText('auth-status', error.message);
+  });
+
+  window.addEventListener('beforeunload', () => {
+    closeChatStream();
   });
 });

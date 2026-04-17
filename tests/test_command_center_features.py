@@ -204,6 +204,9 @@ def test_frontend_shell_is_served_from_root():
     assert '/static/app.js' in body
     assert 'Approvals' in body
     assert 'approvals-list' in body
+    assert 'Chat Transcript' in body
+    assert 'chat-transcript' in body
+    assert 'chat-stream-status' in body
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -220,6 +223,10 @@ def test_frontend_javascript_bundle_is_served():
     assert 'fetchOverview' in body
     assert 'renderApprovals' in body
     assert '/ops/approvals' in body
+    assert 'renderChatTranscript' in body
+    assert '/ops/chat/transcript' in body
+    assert '/ops/chat/stream' in body
+    assert 'chat-stream-status' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():
@@ -534,6 +541,27 @@ def test_chat_stream_route_emits_contract_and_message_events_with_cursor_support
     assert 'id: 1' not in body
     assert 'id: 2' not in body
     assert ': heartbeat' in body
+
+
+def test_chat_ui_contract_has_session_summary_and_tool_call_labels(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/chat/transcript?session_id=sess-live-1')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['session']['platform'] == 'telegram'
+    assert payload['data']['session']['model'] == 'gpt-5.4'
+    assert payload['data']['items'][2]['tool_calls'][0]['name'] == 'terminal'
+    assert payload['data']['items'][3]['role'] == 'tool'
 
 
 def test_runtime_event_ingest_updates_derived_state_and_feed():
