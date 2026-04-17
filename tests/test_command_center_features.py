@@ -350,6 +350,9 @@ def test_skills_page_is_served_with_browser_panels():
     assert 'Skills Page' in body
     assert 'skills-page-list' in body
     assert 'skills-page-detail' in body
+    assert 'HCC-design-advisor' in body
+    assert 'design-advisor-prompt' in body
+    assert 'design-advisor-result' in body
 
 
 def test_files_page_is_served_with_workspace_browser_panels():
@@ -476,6 +479,12 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderSkillsPage' in body
     assert '/ops/skills' in body
     assert 'skills-page-list' in body
+    assert 'renderDesignAdvisor' in body
+    assert 'requestDesignAdvisorRecommendation' in body
+    assert '/ops/design-advisor/recommend' in body
+    assert 'HCC-design-advisor' in body
+    assert 'design-advisor-prompt' in body
+    assert 'design-advisor-result' in body
     assert 'renderFilesPage' in body
     assert '/ops/files' in body
     assert 'files-page-list' in body
@@ -910,6 +919,52 @@ def test_gateway_backend_exposes_redacted_channel_status(tmp_path, monkeypatch):
     assert payload['data']['gateway']['status'] == 'connected'
     assert payload['data']['gateway']['bot_token_redacted'].endswith('oken')
     assert payload['data']['channels'][0]['secret_redacted'].startswith('***')
+
+
+def test_design_advisor_backend_returns_structured_recommendation():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/ops/design-advisor/recommend',
+            method='POST',
+            json_body={
+                'page_type': 'skills',
+                'intent': 'refine the skill browser for operator workflows',
+                'visual_profile': 'premium-dark-ops',
+            },
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['agent']['id'] == 'HCC-design-advisor'
+    assert payload['data']['recommendation']['page_type'] == 'skills'
+    assert payload['data']['recommendation']['best_fit_style']
+    assert payload['data']['recommendation']['layout_pattern']
+    assert payload['data']['recommendation']['implementation_notes']
+    assert 'premium-dark-ops' == payload['data']['recommendation']['visual_profile']
+
+
+def test_design_advisor_backend_rejects_missing_intent():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(
+            server,
+            '/ops/design-advisor/recommend',
+            method='POST',
+            json_body={'page_type': 'skills'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 400
+    assert payload['error']['code'] == 'ops.invalid_request'
+    assert payload['error']['details']['field'] == 'intent'
 
 
 def test_security_audit_gate_exposes_overall_regression_status():

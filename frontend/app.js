@@ -70,6 +70,7 @@ const PAGE_META = {
 };
 
 const activePage = PAGE_META[window.location.pathname] || PAGE_META['/'];
+const DESIGN_ADVISOR_AGENT_ID = 'HCC-design-advisor';
 let activeChatStream = null;
 let activeSessionId = null;
 let activityPageLimit = 20;
@@ -342,6 +343,46 @@ function renderSkillsPage(payload) {
   setText('skills-page-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No skill selected.');
 }
 
+function renderDesignAdvisor(payload) {
+  const recommendation = payload.recommendation || {};
+  const lines = [
+    `Agent: ${payload.agent?.id || DESIGN_ADVISOR_AGENT_ID}`,
+    `Page Type: ${recommendation.page_type || 'unknown'}`,
+    `Visual Profile: ${recommendation.visual_profile || 'unknown'}`,
+    `Best-Fit Style: ${recommendation.best_fit_style || 'unknown'}`,
+    `Layout: ${recommendation.layout_pattern || 'unknown'}`,
+    '',
+    'Color Direction:',
+    ...((recommendation.color_direction || []).map(item => `- ${item}`)),
+    '',
+    'Typography Direction:',
+    ...((recommendation.typography_direction || []).map(item => `- ${item}`)),
+    '',
+    'Interaction Cues:',
+    ...((recommendation.interaction_cues || []).map(item => `- ${item}`)),
+    '',
+    'Avoid:',
+    ...((recommendation.avoid || []).map(item => `- ${item}`)),
+    '',
+    'Implementation Notes:',
+    ...((recommendation.implementation_notes || []).map(item => `- ${item}`)),
+  ];
+  setText('design-advisor-result', lines.join('\n'));
+}
+
+async function requestDesignAdvisorRecommendation() {
+  const prompt = document.getElementById('design-advisor-prompt')?.value || 'Refine the current operator surface.';
+  const payload = await fetchJson('/ops/design-advisor/recommend', {
+    method: 'POST',
+    body: JSON.stringify({
+      page_type: activePage.key || 'dashboard',
+      intent: prompt,
+      visual_profile: 'premium-dark-ops',
+    }),
+  });
+  renderDesignAdvisor(payload.data || {});
+}
+
 function renderFilesPage(payload) {
   const items = payload.items || [];
   renderListInto('files-page-list', items, item => card(item.path, item.preview, [actionButton('Inspect', () => setText('files-page-detail', JSON.stringify(item, null, 2)))]), 'No files yet');
@@ -423,6 +464,7 @@ async function fetchOverview() {
   renderTerminalPolicyPage(terminalPolicy.data || {});
   renderMemoryPage(memoryPayload.data || {});
   renderSkillsPage(skillsPayload.data || {});
+  await requestDesignAdvisorRecommendation();
   renderFilesPage(filesPayload.data || {});
   renderProfilesPage(profilesPayload.data || {});
   renderChannelsPage(gatewayPayload.data || {});
@@ -452,6 +494,7 @@ window.addEventListener('DOMContentLoaded', () => {
     activityPageLimit += 20;
     loadActivityPage().catch(error => setText('activity-window-summary', error.message));
   });
+  document.getElementById('design-advisor-run')?.addEventListener('click', () => requestDesignAdvisorRecommendation().catch(error => setText('design-advisor-result', error.message)));
   document.getElementById('refresh-button').addEventListener('click', () => fetchOverview().catch(error => setText('generated-at', error.message)));
   fetchOverview().catch(error => setText('generated-at', error.message));
   window.addEventListener('beforeunload', closeChatStream);
