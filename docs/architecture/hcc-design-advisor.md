@@ -6,11 +6,26 @@
 
 It exposes a narrow advisory endpoint instead of importing the full upstream UI/UX repository stack.
 
-## Endpoint
+## Endpoints
 
+- `GET /ops/design-advisor/catalog`
 - `POST /ops/design-advisor/recommend`
 
-Request body:
+### Catalog response
+
+The catalog exposes:
+- `agent.id`
+- `supported_page_types`
+- `prompt_starters`
+- `surface_presets`
+
+Each surface preset can include:
+- `best_fit_style`
+- `layout_pattern`
+- `recommended_components`
+- `prompt_suggestions`
+
+### Recommendation request body
 
 ```json
 {
@@ -20,7 +35,7 @@ Request body:
 }
 ```
 
-Response shape:
+### Recommendation response shape
 
 - `agent.id` — always `HCC-design-advisor`
 - `recommendation.page_type`
@@ -33,17 +48,21 @@ Response shape:
 - `recommendation.interaction_cues[]`
 - `recommendation.avoid[]`
 - `recommendation.implementation_notes[]`
+- `recommendation.recommended_components[]`
+- `recommendation.prompt_suggestions[]`
+- `recommendation.next_actions[]`
 - `recommendation.summary`
 
 ## Current MVP behavior
 
-The current implementation is intentionally narrow:
+The current implementation is intentionally narrow but now more product-oriented:
 
 - page-type-aware presets for:
   - `skills`
   - `cron`
   - `activity`
   - `chat`
+  - `usage`
 - fallback preset for other surfaces
 - strict request validation for required fields
 - no runtime dependency on the upstream external repo
@@ -52,11 +71,15 @@ The current implementation is intentionally narrow:
 
 The `Skills Page` now includes a dedicated `HCC-design-advisor` panel with:
 
+- advisor catalog summary
+- prompt suggestions / starters
 - prompt textarea
 - run button
 - structured recommendation output
 
-The frontend also requests one default recommendation during the standard page load to keep the panel informative.
+The frontend requests:
+- one catalog payload during normal page load
+- one default recommendation during normal page load
 
 ## Why this shape
 

@@ -400,6 +400,25 @@ def test_channels_page_is_served_with_gateway_panels():
     assert 'channels-page-detail' in body
 
 
+def test_usage_page_is_served_with_operational_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/usage')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Usage' in body
+    assert 'usage-summary' in body
+    assert 'usage-list' in body
+    assert 'usage-detail' in body
+    assert 'usage-breaker-form' in body
+    assert 'usage-agent-breakdown' in body
+
+
 def test_new_navigation_placeholder_routes_are_served():
     expected = {
         '/usage': 'Usage',
@@ -482,9 +501,16 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderDesignAdvisor' in body
     assert 'requestDesignAdvisorRecommendation' in body
     assert '/ops/design-advisor/recommend' in body
+    assert '/ops/design-advisor/catalog' in body
+    assert 'renderDesignAdvisorCatalog' in body
+    assert 'applyDesignAdvisorPromptSuggestion' in body
     assert 'HCC-design-advisor' in body
     assert 'design-advisor-prompt' in body
     assert 'design-advisor-result' in body
+    assert 'renderUsagePage' in body
+    assert '/ops/usage' in body
+    assert 'usage-breaker-form' in body
+    assert 'usage-agent-breakdown' in body
     assert 'renderFilesPage' in body
     assert '/ops/files' in body
     assert 'files-page-list' in body
@@ -945,7 +971,27 @@ def test_design_advisor_backend_returns_structured_recommendation():
     assert payload['data']['recommendation']['best_fit_style']
     assert payload['data']['recommendation']['layout_pattern']
     assert payload['data']['recommendation']['implementation_notes']
+    assert payload['data']['recommendation']['recommended_components']
+    assert payload['data']['recommendation']['prompt_suggestions']
+    assert payload['data']['recommendation']['next_actions']
     assert 'premium-dark-ops' == payload['data']['recommendation']['visual_profile']
+
+
+def test_design_advisor_catalog_exposes_supported_surfaces_and_prompt_starters():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/design-advisor/catalog')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['agent']['id'] == 'HCC-design-advisor'
+    assert 'skills' in payload['data']['supported_page_types']
+    assert 'usage' in payload['data']['supported_page_types']
+    assert payload['data']['prompt_starters']
+    assert payload['data']['surface_presets']
 
 
 def test_design_advisor_backend_rejects_missing_intent():
@@ -965,6 +1011,29 @@ def test_design_advisor_backend_rejects_missing_intent():
     assert status == 400
     assert payload['error']['code'] == 'ops.invalid_request'
     assert payload['error']['details']['field'] == 'intent'
+
+
+def test_usage_backend_exposes_operational_snapshot_and_agent_breakdown(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/usage')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['totals']['total_tokens'] == 210
+    assert payload['data']['totals']['actual_cost_usd'] == 1.25
+    assert payload['data']['agent_breakdown'][0]['agent_id'] == 'agent-main'
+    assert payload['data']['performance']['snapshot']['route_count'] >= 1
+    assert payload['data']['load_smoke']['failures'] == 0
+    assert payload['data']['top_sessions'][0]['session_id'] == 'sess-live-1'
 
 
 def test_security_audit_gate_exposes_overall_regression_status():

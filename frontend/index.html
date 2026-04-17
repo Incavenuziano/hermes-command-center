@@ -115,10 +115,21 @@
           <article>
             <div class="panel-header"><h2>Usage</h2><p id="usage-summary" class="panel-caption">Usage and performance snapshot.</p></div>
             <ul id="usage-list" class="item-list"></ul>
+            <form id="usage-breaker-form" class="stack-form">
+              <label class="field-label" for="usage-max-cost">Max actual cost (USD)</label>
+              <input id="usage-max-cost" type="number" step="0.01" min="0" placeholder="e.g. 5.00">
+              <label class="field-label" for="usage-max-tokens">Max total tokens</label>
+              <input id="usage-max-tokens" type="number" step="1" min="0" placeholder="e.g. 5000">
+              <div class="actions-row"><button id="usage-breaker-submit" type="submit" class="action-button">Update Breaker</button></div>
+            </form>
           </article>
           <article>
             <div class="panel-header"><h2>Usage Detail</h2></div>
             <pre id="usage-detail">Loading usage details.</pre>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Agent Breakdown</h2><p class="panel-caption">Per-agent token and cost distribution.</p></div>
+            <ul id="usage-agent-breakdown" class="item-list"></ul>
           </article>
         </section>
 
@@ -201,6 +212,8 @@
           <article><div class="panel-header"><h2>Skill Detail</h2></div><pre id="skills-page-detail">Loading skill details.</pre></article>
           <article>
             <div class="panel-header"><h2>HCC-design-advisor</h2><p class="panel-caption">Design recommendation agent for the current operator surface.</p></div>
+            <pre id="design-advisor-catalog">Loading advisor catalog.</pre>
+            <div id="design-advisor-prompt-suggestions" class="item-meta">Loading prompt suggestions.</div>
             <label class="field-label" for="design-advisor-prompt">Prompt</label>
             <textarea id="design-advisor-prompt" rows="6">Refine the skill browser for operator workflows with better hierarchy and scanability.</textarea>
             <div class="actions-row"><button id="design-advisor-run" type="button" class="action-button">Run Advisor</button></div>

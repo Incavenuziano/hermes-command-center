@@ -74,6 +74,7 @@ const DESIGN_ADVISOR_AGENT_ID = 'HCC-design-advisor';
 let activeChatStream = null;
 let activeSessionId = null;
 let activityPageLimit = 20;
+let designAdvisorCatalog = null;
 
 function renderCurrentPage() {
   document.querySelectorAll('.page-section').forEach(section => section.classList.remove('active'));
@@ -343,6 +344,27 @@ function renderSkillsPage(payload) {
   setText('skills-page-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No skill selected.');
 }
 
+function applyDesignAdvisorPromptSuggestion(prompt) {
+  const input = document.getElementById('design-advisor-prompt');
+  if (input) input.value = prompt;
+}
+
+function renderDesignAdvisorCatalog(payload) {
+  designAdvisorCatalog = payload;
+  const preset = payload.surface_presets?.[activePage.key] || payload.surface_presets?.skills || null;
+  const suggestions = preset?.prompt_suggestions || payload.prompt_starters || [];
+  const buttons = suggestions.map(prompt => `[${prompt}]`).join(' ');
+  const lines = [
+    `Catalog Agent: ${payload.agent?.id || DESIGN_ADVISOR_AGENT_ID}`,
+    `Supported Surfaces: ${(payload.supported_page_types || []).join(', ')}`,
+    '',
+    'Prompt Suggestions:',
+    ...suggestions.map(item => `- ${item}`),
+  ];
+  setText('design-advisor-catalog', lines.join('\n'));
+  setText('design-advisor-prompt-suggestions', buttons || 'No prompt suggestions available.');
+}
+
 function renderDesignAdvisor(payload) {
   const recommendation = payload.recommendation || {};
   const lines = [
@@ -366,6 +388,12 @@ function renderDesignAdvisor(payload) {
     '',
     'Implementation Notes:',
     ...((recommendation.implementation_notes || []).map(item => `- ${item}`)),
+    '',
+    'Recommended Components:',
+    ...((recommendation.recommended_components || []).map(item => `- ${item}`)),
+    '',
+    'Next Actions:',
+    ...((recommendation.next_actions || []).map(item => `- ${item}`)),
   ];
   setText('design-advisor-result', lines.join('\n'));
 }
@@ -381,6 +409,49 @@ async function requestDesignAdvisorRecommendation() {
     }),
   });
   renderDesignAdvisor(payload.data || {});
+}
+
+async function loadDesignAdvisorCatalog() {
+  const payload = await fetchJson('/ops/design-advisor/catalog');
+  renderDesignAdvisorCatalog(payload.data || {});
+}
+
+function renderUsagePage(payload) {
+  const totals = payload.totals || {};
+  const breaker = payload.circuit_breaker || {};
+  const topSessions = payload.top_sessions || [];
+  const agentBreakdown = payload.agent_breakdown || [];
+  const performance = payload.performance || {};
+  const loadSmoke = payload.load_smoke || {};
+  renderListInto('usage-list', [
+    ['Total Tokens', String(totals.total_tokens || 0)],
+    ['Actual Cost USD', String(totals.actual_cost_usd || 0)],
+    ['Estimated Cost USD', String(totals.estimated_cost_usd || 0)],
+    ['Circuit Breaker', breaker.tripped ? `tripped (${(breaker.reasons || []).join(', ')})` : 'healthy'],
+    ['Route Count', String(performance.snapshot?.route_count || 0)],
+    ['Load Smoke Failures', String(loadSmoke.failures || 0)],
+  ], ([label, value]) => card(label, value));
+  renderListInto('usage-agent-breakdown', agentBreakdown, item => card(`${item.agent_id} · ${item.session_count} session(s)`, `${item.total_tokens} tokens · $${item.actual_cost_usd || 0}`, [actionButton('Inspect Agent', () => setText('usage-detail', JSON.stringify({ agent: item, top_sessions: topSessions }, null, 2)))]), 'No agent usage yet');
+  setText('usage-summary', `${totals.total_tokens || 0} tokens · $${totals.actual_cost_usd || 0} actual · breaker ${breaker.tripped ? 'tripped' : 'healthy'}`);
+  setText('usage-detail', JSON.stringify({ totals, circuit_breaker: breaker, performance, load_smoke: loadSmoke, top_sessions: topSessions }, null, 2));
+  const costInput = document.getElementById('usage-max-cost');
+  const tokenInput = document.getElementById('usage-max-tokens');
+  if (costInput && typeof breaker.max_actual_cost_usd !== 'undefined' && breaker.max_actual_cost_usd !== null) costInput.value = breaker.max_actual_cost_usd;
+  if (tokenInput && typeof breaker.max_total_tokens !== 'undefined' && breaker.max_total_tokens !== null) tokenInput.value = breaker.max_total_tokens;
+}
+
+async function requestUsageCircuitBreakerUpdate() {
+  const maxCostRaw = document.getElementById('usage-max-cost')?.value || '';
+  const maxTokensRaw = document.getElementById('usage-max-tokens')?.value || '';
+  await fetchJson('/ops/costs/circuit-breaker', {
+    method: 'POST',
+    body: JSON.stringify({
+      max_actual_cost_usd: maxCostRaw ? Number(maxCostRaw) : null,
+      max_total_tokens: maxTokensRaw ? Number(maxTokensRaw) : null,
+    }),
+  });
+  const usagePayload = await fetchJson('/ops/usage');
+  renderUsagePage(usagePayload.data || {});
 }
 
 function renderFilesPage(payload) {
@@ -441,6 +512,7 @@ async function fetchOverview() {
   const terminalPolicy = await fetchJson('/ops/terminal-policy');
   const memoryPayload = await fetchJson('/ops/memory');
   const skillsPayload = await fetchJson('/ops/skills');
+  const usagePayload = await fetchJson('/ops/usage');
   const filesPayload = await fetchJson('/ops/files');
   const profilesPayload = await fetchJson('/ops/profiles');
   const gatewayPayload = await fetchJson('/ops/gateway');
@@ -464,6 +536,8 @@ async function fetchOverview() {
   renderTerminalPolicyPage(terminalPolicy.data || {});
   renderMemoryPage(memoryPayload.data || {});
   renderSkillsPage(skillsPayload.data || {});
+  renderUsagePage(usagePayload.data || {});
+  await loadDesignAdvisorCatalog();
   await requestDesignAdvisorRecommendation();
   renderFilesPage(filesPayload.data || {});
   renderProfilesPage(profilesPayload.data || {});
@@ -495,6 +569,10 @@ window.addEventListener('DOMContentLoaded', () => {
     loadActivityPage().catch(error => setText('activity-window-summary', error.message));
   });
   document.getElementById('design-advisor-run')?.addEventListener('click', () => requestDesignAdvisorRecommendation().catch(error => setText('design-advisor-result', error.message)));
+  document.getElementById('usage-breaker-form')?.addEventListener('submit', event => {
+    event.preventDefault();
+    requestUsageCircuitBreakerUpdate().catch(error => setText('usage-detail', error.message));
+  });
   document.getElementById('refresh-button').addEventListener('click', () => fetchOverview().catch(error => setText('generated-at', error.message)));
   fetchOverview().catch(error => setText('generated-at', error.message));
   window.addEventListener('beforeunload', closeChatStream);
