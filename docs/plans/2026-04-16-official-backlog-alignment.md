@@ -183,9 +183,15 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ### M3 — Operator Control Plane and Cost Governance
 
-- M3-01 Cost circuit breaker and per-agent telemetry: NOT STARTED
+- M3-01 Cost circuit breaker and per-agent telemetry: DONE
+  - `GET /ops/costs` exposes runtime-derived totals and per-agent telemetry
+  - `POST /ops/costs/circuit-breaker` persists breaker thresholds and evaluates tripped state
+  - implementation/documentation live in `backend/routes/costs.py`, `backend/cost_controls.py`, and `docs/architecture/cost-governance.md`
 
-- M3-02 Panic stop global control: NOT STARTED
+- M3-02 Panic stop global control: DONE
+  - `POST /ops/panic-stop` kills running processes and pauses enabled cron jobs
+  - panic stop emits derived-state events and append-only audit records
+  - behavior documented in `docs/architecture/cost-governance.md`
 
 - M3-03 Read-only mode: NOT STARTED
 

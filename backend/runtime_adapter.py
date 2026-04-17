@@ -69,7 +69,7 @@ class HermesRuntimeAdapter:
             conn.row_factory = sqlite3.Row
             try:
                 data = conn.execute(
-                    "SELECT id, source, user_id, model, started_at, ended_at, title FROM sessions ORDER BY started_at DESC LIMIT 50"
+                    "SELECT id, source, user_id, model, started_at, ended_at, title, input_tokens, output_tokens, reasoning_tokens, estimated_cost_usd, actual_cost_usd FROM sessions ORDER BY started_at DESC LIMIT 50"
                 ).fetchall()
             finally:
                 conn.close()
@@ -84,6 +84,12 @@ class HermesRuntimeAdapter:
                         'status': 'active' if row['ended_at'] is None else 'ended',
                         'started_at': self._from_ts(row['started_at']),
                         'updated_at': self._from_ts(row['ended_at'] or row['started_at']),
+                        'agent_id': 'agent-main',
+                        'input_tokens': row['input_tokens'] or 0,
+                        'output_tokens': row['output_tokens'] or 0,
+                        'reasoning_tokens': row['reasoning_tokens'] or 0,
+                        'estimated_cost_usd': row['estimated_cost_usd'] or 0.0,
+                        'actual_cost_usd': row['actual_cost_usd'] or 0.0,
                     }
                 )
         index = self._read_json(self.sessions_index_path, {})

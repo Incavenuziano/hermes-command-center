@@ -108,6 +108,40 @@ def ops_process_kill(handler) -> None:
     handler.send_data({'ok': True, 'process': process, 'event': event, 'audit_entry': audit_entry})
 
 
+@route('POST', '/ops/panic-stop', allow=('POST',))
+def ops_panic_stop(handler) -> None:
+    session_id = _require_authenticated(handler)
+    handler.read_json_body()
+    stopped_processes = []
+    paused_jobs = []
+    for process in runtime_adapter.list_processes():
+        if process.get('status') != 'running':
+            continue
+        process_id = process.get('process_id')
+        if not isinstance(process_id, str):
+            continue
+        stopped_processes.append(runtime_adapter.kill_process(process_id))
+        derived_state_store.ingest_event({'kind': 'process.kill_requested', 'source': 'command-center', 'data': {'process_id': process_id, 'status': stopped_processes[-1].get('status')}})
+    for job in runtime_adapter.list_cron_jobs():
+        if not job.get('enabled'):
+            continue
+        job_id = job.get('job_id')
+        if not isinstance(job_id, str):
+            continue
+        paused_jobs.append(runtime_adapter.control_cron_job(job_id, 'pause'))
+        derived_state_store.ingest_event({'kind': 'cron.pause_requested', 'source': 'command-center', 'data': {'job_id': job_id, 'name': paused_jobs[-1].get('name'), 'status': paused_jobs[-1].get('status'), 'schedule': paused_jobs[-1].get('schedule')}})
+    audit_entry = _append_audit_entry(
+        handler,
+        session_id=session_id,
+        action_type='ops.panic_stop',
+        target_type='system',
+        target_id='global',
+        result='executed',
+        details={'stopped_processes': len(stopped_processes), 'paused_cron_jobs': len(paused_jobs)},
+    )
+    handler.send_data({'ok': True, 'stopped_processes': len(stopped_processes), 'paused_cron_jobs': len(paused_jobs), 'audit_entry': audit_entry})
+
+
 @route('POST', '/ops/cron/control', allow=('POST',))
 def ops_cron_control(handler) -> None:
     session_id = _require_authenticated(handler)

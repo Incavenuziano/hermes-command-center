@@ -65,8 +65,8 @@ def _write_runtime_fixture(base: Path) -> None:
         'CREATE TABLE sessions (id TEXT PRIMARY KEY, source TEXT NOT NULL, user_id TEXT, model TEXT, model_config TEXT, system_prompt TEXT, parent_session_id TEXT, started_at REAL NOT NULL, ended_at REAL, end_reason TEXT, message_count INTEGER DEFAULT 0, tool_call_count INTEGER DEFAULT 0, input_tokens INTEGER DEFAULT 0, output_tokens INTEGER DEFAULT 0, cache_read_tokens INTEGER DEFAULT 0, cache_write_tokens INTEGER DEFAULT 0, reasoning_tokens INTEGER DEFAULT 0, billing_provider TEXT, billing_base_url TEXT, billing_mode TEXT, estimated_cost_usd REAL, actual_cost_usd REAL, cost_status TEXT, cost_source TEXT, pricing_version TEXT, title TEXT)'
     )
     db.execute(
-        "INSERT INTO sessions (id, source, user_id, model, started_at, ended_at, title) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        ('sess-live-1', 'telegram', 'u1', 'gpt-5.4', 1000.0, None, 'Live session'),
+        "INSERT INTO sessions (id, source, user_id, model, started_at, ended_at, title, input_tokens, output_tokens, reasoning_tokens, estimated_cost_usd, actual_cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ('sess-live-1', 'telegram', 'u1', 'gpt-5.4', 1000.0, None, 'Live session', 120, 80, 10, 1.10, 1.25),
     )
     db.commit()
     db.close()
@@ -369,6 +369,72 @@ def test_cron_control_pause_updates_jobs_file_and_event_feed(tmp_path, monkeypat
     assert jobs['jobs'][0]['state'] == 'paused'
     assert events_status == 200
     assert events_payload['data']['items'][0]['kind'] == 'cron.pause_requested'
+
+
+def test_cost_telemetry_and_circuit_breaker_status_are_exposed(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    data_dir = tmp_path / 'command-center-data'
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(data_dir))
+
+    server, thread = _start_test_server()
+    try:
+        initial_status, _, initial_payload = _request(server, '/ops/costs')
+        update_status, _, update_payload = _request(
+            server,
+            '/ops/costs/circuit-breaker',
+            method='POST',
+            json_body={'max_actual_cost_usd': 1.0, 'max_total_tokens': 150},
+        )
+        final_status, _, final_payload = _request(server, '/ops/costs')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert initial_status == 200
+    assert initial_payload['data']['totals']['actual_cost_usd'] == 1.25
+    assert initial_payload['data']['totals']['total_tokens'] == 210
+    assert initial_payload['data']['agents'][0]['agent_id'] == 'agent-main'
+    assert initial_payload['data']['agents'][0]['actual_cost_usd'] == 1.25
+    assert update_status == 200
+    assert update_payload['data']['circuit_breaker']['tripped'] is True
+    assert final_status == 200
+    assert final_payload['data']['circuit_breaker']['tripped'] is True
+    assert 'cost_limit_exceeded' in final_payload['data']['circuit_breaker']['reasons']
+    assert 'token_limit_exceeded' in final_payload['data']['circuit_breaker']['reasons']
+
+
+def test_panic_stop_kills_processes_and_pauses_cron_jobs(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    killed = []
+
+    def fake_kill(pid, sig):
+        if sig != 0:
+            killed.append(pid)
+
+    monkeypatch.setattr('os.kill', fake_kill)
+
+    server, thread = _start_test_server()
+    try:
+        stop_status, _, stop_payload = _request(server, '/ops/panic-stop', method='POST', json_body={})
+        overview_status, _, overview_payload = _request(server, '/ops/overview')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert stop_status == 200
+    assert stop_payload['data']['stopped_processes'] == 1
+    assert stop_payload['data']['paused_cron_jobs'] == 1
+    assert killed == [999999]
+    assert overview_status == 200
+    assert overview_payload['data']['processes'][0]['status'] == 'termination_requested'
+    assert overview_payload['data']['cron_jobs'][0]['status'] == 'paused'
 
 
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
