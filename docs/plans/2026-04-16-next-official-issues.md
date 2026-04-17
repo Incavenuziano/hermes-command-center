@@ -8,35 +8,23 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-13 — Schema migration framework
-Status: OPEN
-Priority: P1
-Why next:
-- it appears earlier in the canonical issue order than remaining browser-hardening/polish items
-- current SQLite-backed stores do not yet expose an explicit migration framework
-
-Scope:
-- define migration metadata table and apply-on-startup flow
-- cover Command Center-owned SQLite stores
-- add regression tests for first-run init and idempotent re-run
-- document operator expectations for future schema changes
-
-Suggested deliverables:
-- `backend/migrations.py` or equivalent
-- migration bootstrap wiring
-- tests for schema initialization and repeat startup behavior
-
-### 2. M1-04 — Browser hardening and CSRF protection alignment
+### 1. M1-04 — Browser hardening and CSRF protection alignment
 Status: OPEN
 Priority: P1
 Why next:
 - explicit-auth CSRF exists, but broader browser hardening still needs formal closure
 
-### 3. M1-05 — Canonical backend contracts for core surfaces
+### 2. M1-05 — Canonical backend contracts for core surfaces
 Status: OPEN
 Priority: P1
 Why next:
 - contracts exist, but all official core surfaces should be reaudited/normalized after the recent M1 additions
+
+### 3. M1-10 — WebAuthn/passkey optional second factor
+Status: OPEN
+Priority: P2
+Why next:
+- still part of official M1 scope, but lower leverage than hardening/contracts alignment for the current single-user phase
 
 ## After those M1 items
 Proceed in official order into M2:

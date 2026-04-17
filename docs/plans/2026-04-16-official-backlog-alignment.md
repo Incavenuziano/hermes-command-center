@@ -121,8 +121,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - SQLite-backed event bus implemented in `backend/event_bus.py` with integer event IDs and replay via `Last-Event-ID`
   - health snapshot, operational events, and audit events now share one stream contract documented in `docs/architecture/sse-event-bus.md`
 
-- M1-13 Schema migration framework: NOT STARTED / PARTIAL at best
-  - no dedicated Command Center migration framework audited yet
+- M1-13 Schema migration framework: DONE
+  - explicit migration manager shipped in `backend/migrations.py`
+  - startup now applies Command Center-owned SQLite migrations before serving
+  - migration behavior and operator expectations documented in `docs/architecture/schema-migrations.md`
 
 - M1-14 Error taxonomy and standard error envelope: DONE
   - standard error envelope and error codes are already implemented

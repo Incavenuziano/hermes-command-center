@@ -14,6 +14,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app import build_app, run_startup_checks  # noqa: E402
+from migrations import MigrationManager  # noqa: E402
 
 
 def _start_test_server():
@@ -586,6 +587,14 @@ def test_startup_checks_require_explicit_tailnet_trust_when_non_loopback_and_aut
     errors = run_startup_checks()
 
     assert 'Refusing trusted-local non-loopback bind without HCC_TRUST_TAILNET_ONLY=1' in errors
+
+
+def test_migration_manager_can_run_during_startup(tmp_path):
+    manager = MigrationManager(data_dir=tmp_path / 'command-center-data')
+
+    report = manager.apply_all()
+
+    assert report['current_versions'] == {'audit_log': '1', 'event_bus': '1'}
 
 
 def test_apply_runtime_posture_enforces_restrictive_umask(monkeypatch):

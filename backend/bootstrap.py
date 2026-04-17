@@ -6,6 +6,7 @@ from http.server import ThreadingHTTPServer
 
 from config import AUTH_ENABLED, HOST, PORT, TRUST_TAILNET_ONLY, configure_logging
 from http_api import ApiHandler
+from migrations import migration_manager
 from routes import system  # noqa: F401  Ensures route registration.
 
 
@@ -41,6 +42,7 @@ def main() -> None:
 
     configure_logging()
     apply_runtime_posture()
+    migration_manager.apply_all()
     server = build_app()
     print(f'Hermes Command Center listening on http://{HOST}:{PORT}', file=sys.stderr)
     server.serve_forever()
