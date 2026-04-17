@@ -14,8 +14,11 @@ Compensating controls currently in place:
 - single-user product scope
 - Tailscale access instead of public internet exposure
 - loopback/local-first default still preserved in code paths unless explicitly overridden
-- destructive actions remain limited in scope and are visible in the event feed
+- destructive actions are captured in append-only operator audit logging
+- operator activity is visible through the unified SSE/event feed surfaces
+- trusted-local non-loopback startup now also requires explicit `HCC_TRUST_TAILNET_ONLY=1`
 
 Required follow-up:
 - revisit before 1.0 release
 - either restore auth for non-loopback exposure or formally codify a stricter tailnet-only exception model with additional controls
+- current codified resolution is recorded in `docs/security/m1-auth-posture-exception.md`

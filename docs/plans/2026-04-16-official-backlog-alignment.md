@@ -80,10 +80,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
 - M1-02 Backend application skeleton/config/SQLite setup: DONE
   - backend skeleton, config, stdlib HTTP, routes, tests, and use of Hermes SQLite runtime source are in place
 
-- M1-03 Authentication and secure session lifecycle: PARTIAL + DIVERGENT
-  - cookie/session auth exists
-  - trusted-local bypass also exists and is currently the default
-  - official M1 wording implies secure single-user auth lifecycle should be a central default; current runtime posture is looser because of the user-requested no-login mode
+- M1-03 Authentication and secure session lifecycle: DONE WITH ACCEPTED EXCEPTION
+  - cookie/session auth exists for explicit local-password mode
+  - trusted-local bypass remains available by explicit operator request for the current Tailscale single-user runtime
+  - non-loopback trusted-local startup now requires explicit `HCC_TRUST_TAILNET_ONLY=1`, and the exception is codified in `docs/security/m1-auth-posture-exception.md`
 
 - M1-04 Browser hardening and CSRF protection: PARTIAL
   - CSRF exists for explicit-auth routes
@@ -97,9 +97,9 @@ The work done so far is not the official plan itself. The official roadmap is M0
 - M1-06 Hermes adapter layer for read-only summaries with degraded mode: DONE
   - `backend/runtime_adapter.py` reads real Hermes sessions/processes/cron state
 
-- M1-07 Minimal frontend shell with auth gate / accessible layout: PARTIAL + DIVERGENT
+- M1-07 Minimal frontend shell with auth gate / accessible layout: DONE WITH ACCEPTED EXCEPTION
   - frontend shell exists and is expanded
-  - divergence: no auth gate in current default runtime posture
+  - auth gate remains bypassed only under the explicit trusted-tailnet single-user exception documented in `docs/security/m1-auth-posture-exception.md`
 
 - M1-08 Health and smoke tests: DONE
   - health routes and test coverage exist

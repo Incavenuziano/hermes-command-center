@@ -21,6 +21,7 @@ CONTRACT_VERSION = '2026-04-15'
 SERVICE_NAME = 'hermes-command-center'
 MAX_REQUEST_BYTES = int(os.getenv('HCC_MAX_REQUEST_BYTES', '4096'))
 AUTH_ENABLED = os.getenv('HCC_AUTH_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'}
+TRUST_TAILNET_ONLY = os.getenv('HCC_TRUST_TAILNET_ONLY', '0').strip().lower() in {'1', 'true', 'yes', 'on'}
 AUTH_PASSWORD = resolve_secret('auth.local_password', env_var='HCC_AUTH_PASSWORD', default='dev-password') or 'dev-password'
 AUTH_USER = os.getenv('HCC_AUTH_USER', 'local-operator')
 AUTH_SESSION_TTL_SECONDS = int(os.getenv('HCC_AUTH_SESSION_TTL_SECONDS', '3600'))
@@ -68,4 +69,12 @@ def secret_backend_summary() -> dict[str, Any]:
     auth_summary = secret_store.summary('auth.local_password', env_var='HCC_AUTH_PASSWORD', default='dev-password')
     return {
         'auth_local_password': auth_summary,
+    }
+
+
+def security_posture_summary() -> dict[str, Any]:
+    return {
+        'non_loopback_requires_explicit_trusted_tailnet': True,
+        'trusted_tailnet_only_enabled': TRUST_TAILNET_ONLY,
+        'auth_enabled': AUTH_ENABLED,
     }

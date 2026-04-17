@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME, secret_backend_summary, to_jsonable
+from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME, secret_backend_summary, security_posture_summary, to_jsonable
 from contracts.system import ComponentStatus, SystemComponent, SystemHealth, SystemIdentity
 from http_api import route
 
@@ -41,6 +41,7 @@ def system_info(handler) -> None:
     )
     payload = to_jsonable(identity)
     payload['secret_storage'] = secret_backend_summary()
+    payload['security_posture'] = security_posture_summary()
     handler.send_data(payload)
 
 

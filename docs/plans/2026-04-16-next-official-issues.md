@@ -8,23 +8,35 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
-Status: OPEN (DECISION REQUIRED)
+### 1. M1-13 — Schema migration framework
+Status: OPEN
 Priority: P1
 Why next:
-- current runtime intentionally diverges from official backlog default
-- must either be corrected or explicitly documented/accepted as an exception
+- it appears earlier in the canonical issue order than remaining browser-hardening/polish items
+- current SQLite-backed stores do not yet expose an explicit migration framework
 
 Scope:
-- decide one of:
-  - restore auth requirement for non-loopback exposure, or
-  - keep Tailscale no-login mode but document it as an approved exception with compensating controls
-- update docs/tests/startup rules accordingly
+- define migration metadata table and apply-on-startup flow
+- cover Command Center-owned SQLite stores
+- add regression tests for first-run init and idempotent re-run
+- document operator expectations for future schema changes
 
 Suggested deliverables:
-- decision record in docs
-- config/default updates if needed
-- tests for chosen posture
+- `backend/migrations.py` or equivalent
+- migration bootstrap wiring
+- tests for schema initialization and repeat startup behavior
+
+### 2. M1-04 — Browser hardening and CSRF protection alignment
+Status: OPEN
+Priority: P1
+Why next:
+- explicit-auth CSRF exists, but broader browser hardening still needs formal closure
+
+### 3. M1-05 — Canonical backend contracts for core surfaces
+Status: OPEN
+Priority: P1
+Why next:
+- contracts exist, but all official core surfaces should be reaudited/normalized after the recent M1 additions
 
 ## After those M1 items
 Proceed in official order into M2:

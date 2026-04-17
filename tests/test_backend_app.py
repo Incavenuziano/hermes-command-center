@@ -97,6 +97,7 @@ def test_system_info_endpoint_returns_service_identity():
     assert payload['data']['service'] == 'hermes-command-center'
     assert payload['data']['transport'] == 'http'
     assert payload['data']['auth_mode'] == 'local-trusted'
+    assert payload['data']['security_posture']['non_loopback_requires_explicit_trusted_tailnet'] is True
     assert payload['data']['secret_storage']['auth_local_password']['present'] is True
     assert payload['data']['secret_storage']['auth_local_password']['redacted'] != 'dev-password'
 
@@ -574,6 +575,17 @@ def test_startup_checks_report_non_loopback_bind_without_override(monkeypatch):
     errors = run_startup_checks()
 
     assert 'Refusing non-loopback bind without HCC_ALLOW_NON_LOOPBACK=1' in errors
+
+
+def test_startup_checks_require_explicit_tailnet_trust_when_non_loopback_and_auth_disabled(monkeypatch):
+    monkeypatch.setattr('bootstrap.HOST', '100.64.0.10')
+    monkeypatch.setattr('bootstrap.AUTH_ENABLED', False)
+    monkeypatch.setattr('bootstrap.TRUST_TAILNET_ONLY', False)
+    monkeypatch.setenv('HCC_ALLOW_NON_LOOPBACK', '1')
+
+    errors = run_startup_checks()
+
+    assert 'Refusing trusted-local non-loopback bind without HCC_TRUST_TAILNET_ONLY=1' in errors
 
 
 def test_apply_runtime_posture_enforces_restrictive_umask(monkeypatch):

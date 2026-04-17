@@ -4,7 +4,7 @@ import os
 import sys
 from http.server import ThreadingHTTPServer
 
-from config import HOST, PORT, configure_logging
+from config import AUTH_ENABLED, HOST, PORT, TRUST_TAILNET_ONLY, configure_logging
 from http_api import ApiHandler
 from routes import system  # noqa: F401  Ensures route registration.
 
@@ -18,8 +18,11 @@ def run_startup_checks() -> list[str]:
     if hasattr(os, 'geteuid') and os.geteuid() == 0 and os.getenv('HCC_ALLOW_ROOT') != '1':
         errors.append('Refusing to run as root without HCC_ALLOW_ROOT=1')
 
-    if HOST not in {'127.0.0.1', 'localhost'} and os.getenv('HCC_ALLOW_NON_LOOPBACK') != '1':
+    non_loopback_bind = HOST not in {'127.0.0.1', 'localhost'}
+    if non_loopback_bind and os.getenv('HCC_ALLOW_NON_LOOPBACK') != '1':
         errors.append('Refusing non-loopback bind without HCC_ALLOW_NON_LOOPBACK=1')
+    if non_loopback_bind and not AUTH_ENABLED and not TRUST_TAILNET_ONLY:
+        errors.append('Refusing trusted-local non-loopback bind without HCC_TRUST_TAILNET_ONLY=1')
 
     if not (1 <= PORT <= 65535):
         errors.append('HCC_PORT must be between 1 and 65535')
