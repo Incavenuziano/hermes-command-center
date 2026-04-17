@@ -62,6 +62,10 @@ def test_health_endpoint_returns_contract_headers_and_request_id():
     assert headers['Cache-Control'] == 'no-store'
     assert headers['X-Contract-Version'] == '2026-04-15'
     assert headers['X-Request-ID']
+    assert headers['X-Frame-Options'] == 'DENY'
+    assert headers['X-Content-Type-Options'] == 'nosniff'
+    assert headers['Referrer-Policy'] == 'no-referrer'
+    assert 'default-src' in headers['Content-Security-Policy']
     assert payload['meta']['request_id'] == headers['X-Request-ID']
     assert payload['meta']['contract_version'] == '2026-04-15'
     assert payload['data']['overall_status'] == 'ok'

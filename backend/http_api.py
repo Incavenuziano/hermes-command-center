@@ -13,6 +13,13 @@ from config import AUTH_ENABLED, CONTRACT_VERSION, MAX_REQUEST_BYTES, to_jsonabl
 from contracts.errors import ErrorEnvelope
 
 logger = logging.getLogger(__name__)
+SECURITY_HEADERS = {
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+}
 
 RouteHandler = Callable[['ApiHandler'], None]
 
@@ -152,6 +159,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Contract-Version', CONTRACT_VERSION)
         self.send_header('X-Request-ID', self._request_id())
+        for header_name, header_value in SECURITY_HEADERS.items():
+            self.send_header(header_name, header_value)
 
     def _json(self, payload: dict, status: int = 200, extra_headers: dict[str, str] | None = None) -> None:
         body = json.dumps(payload, ensure_ascii=False, indent=2).encode('utf-8')

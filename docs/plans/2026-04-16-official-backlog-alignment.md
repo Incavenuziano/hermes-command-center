@@ -85,9 +85,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - trusted-local bypass remains available by explicit operator request for the current Tailscale single-user runtime
   - non-loopback trusted-local startup now requires explicit `HCC_TRUST_TAILNET_ONLY=1`, and the exception is codified in `docs/security/m1-auth-posture-exception.md`
 
-- M1-04 Browser hardening and CSRF protection: PARTIAL
-  - CSRF exists for explicit-auth routes
-  - broader browser hardening still needs full alignment to official issue scope
+- M1-04 Browser hardening and CSRF protection: DONE
+  - security headers now applied to JSON and static frontend responses
+  - CSP, nosniff, frame denial, referrer policy, and permissions policy are documented in `docs/security/browser-hardening.md`
+  - explicit-auth CSRF protections remain enforced, with trusted-local bypass limited to the accepted tailnet exception
 
 - M1-05 Canonical backend contracts for core surfaces: PARTIAL
   - standard data/error envelopes exist

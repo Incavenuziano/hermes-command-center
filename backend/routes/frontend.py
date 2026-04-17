@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from config import PROJECT_ROOT
-from http_api import route
+from http_api import SECURITY_HEADERS, route
 
 FRONTEND_DIR = PROJECT_ROOT / 'frontend'
 
@@ -16,6 +16,8 @@ def _send_file(handler, path: Path, content_type: str) -> None:
     handler.send_header('Cache-Control', 'no-store')
     handler.send_header('X-Contract-Version', '2026-04-15')
     handler.send_header('X-Request-ID', handler._request_id())
+    for header_name, header_value in SECURITY_HEADERS.items():
+        handler.send_header(header_name, header_value)
     handler.end_headers()
     handler.wfile.write(body)
 

@@ -169,6 +169,9 @@ def test_frontend_shell_is_served_from_root():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
+    assert headers['X-Frame-Options'] == 'DENY'
+    assert headers['X-Content-Type-Options'] == 'nosniff'
+    assert 'default-src' in headers['Content-Security-Policy']
     assert 'Hermes Command Center' in body
     assert '/static/app.js' in body
 
