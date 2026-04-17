@@ -256,6 +256,30 @@ function renderProcessesPage(items) {
   setText('processes-page-detail', JSON.stringify(items[0], null, 2));
 }
 
+function renderTerminalPolicyPage(policy) {
+  const root = clearRoot('terminal-policy-list');
+  const items = [
+    { label: 'Mode', value: policy.mode || 'unknown' },
+    { label: 'Interactive Terminal', value: policy.interactive_terminal_enabled ? 'enabled' : 'disabled' },
+    { label: 'Risk Posture', value: policy.risk_posture || 'unknown' },
+    { label: 'Revisit', value: policy.revisit_in_milestone || 'unspecified' },
+  ];
+  setText('terminal-policy-summary', `${policy.mode || 'unknown'} · ${policy.risk_posture || 'unknown'}`);
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = item.label;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    meta.textContent = item.value;
+    li.append(title, meta);
+    root.appendChild(li);
+  }
+  setText('terminal-policy-detail', JSON.stringify(policy, null, 2));
+}
+
 function renderCron(items) {
   const root = clearRoot('cron-list');
   if (!items.length) {
@@ -468,6 +492,7 @@ async function fetchOverview() {
   const cronJobs = await fetchJson('/ops/cron/jobs');
   const cronHistory = await fetchJson('/ops/cron/history');
   const processesRegistry = await fetchJson('/ops/processes');
+  const terminalPolicy = await fetchJson('/ops/terminal-policy');
   await loadActivityPage();
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
@@ -484,6 +509,7 @@ async function fetchOverview() {
   renderAgentsPage(overview.data.agents || [], overview.data.sessions || [], overview.data.processes || []);
   renderCronPage(cronJobs.data.items || [], cronHistory.data.items || []);
   renderProcessesPage(processesRegistry.data.items || []);
+  renderTerminalPolicyPage(terminalPolicy.data || {});
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;

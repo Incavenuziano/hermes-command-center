@@ -47,6 +47,11 @@ def processes_shell(handler) -> None:
     _send_file(handler, FRONTEND_DIR / 'index.html', 'text/html; charset=utf-8')
 
 
+@route('GET', '/terminal', allow=('GET',))
+def terminal_shell(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'index.html', 'text/html; charset=utf-8')
+
+
 @route('GET', '/static/app.js', allow=('GET',))
 def app_js(handler) -> None:
     _send_file(handler, FRONTEND_DIR / 'app.js', 'application/javascript; charset=utf-8')

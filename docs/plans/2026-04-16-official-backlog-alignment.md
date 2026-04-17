@@ -232,8 +232,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - process detail drill-down and guarded kill action are available without exposing terminal features
   - UI scope documented in `docs/architecture/processes-page-ui.md`
 
-- M3-10 Terminal strategy with explicit risk posture: NOT STARTED / PARTIAL doc-only
-  - security docs mention posture, but no implemented terminal surface strategy for Command Center
+- M3-10 Terminal strategy with explicit risk posture: DONE
+  - dedicated `/terminal` route added in `backend/routes/frontend.py`
+  - explicit backend policy contract added at `GET /ops/terminal-policy`
+  - frontend terminal strategy page renders the current deny-by-default posture without enabling terminal features
+  - strategy documented in `docs/architecture/terminal-risk-posture.md`
 
 ### M4 — Hermes Knowledge and Configuration Surfaces
 

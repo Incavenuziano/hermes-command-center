@@ -141,6 +141,20 @@ def ops_process_detail_static(handler) -> None:
     handler.send_data({'process': process})
 
 
+@route('GET', '/ops/terminal-policy', allow=('GET',))
+def ops_terminal_policy(handler) -> None:
+    _require_authenticated(handler)
+    handler.send_data({
+        'mode': 'disabled',
+        'interactive_terminal_enabled': False,
+        'allowed_controls': ['kill process', 'pause/resume cron', 'inspect registry metadata'],
+        'blocked_features': ['pty shell access', 'stdin write/submit', 'arbitrary command execution', 'live terminal streaming'],
+        'risk_posture': 'explicit-deny-until-reviewed',
+        'revisit_in_milestone': 'M4+',
+        'rationale': 'Terminal access remains intentionally disabled until a narrower threat model, audit posture, and re-auth design are implemented.',
+    })
+
+
 @route('GET', '/ops/cron/jobs', allow=('GET',))
 def ops_cron_jobs(handler) -> None:
     _require_authenticated(handler)

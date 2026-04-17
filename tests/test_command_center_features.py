@@ -280,6 +280,23 @@ def test_processes_page_is_served_with_registry_and_detail_panels():
     assert 'processes-page-summary' in body
 
 
+def test_terminal_strategy_page_is_served_with_risk_posture_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/terminal')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Terminal Strategy' in body
+    assert 'terminal-policy-summary' in body
+    assert 'terminal-policy-list' in body
+    assert 'terminal-policy-detail' in body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -317,6 +334,11 @@ def test_frontend_javascript_bundle_is_served():
     assert '/ops/processes/control' in body
     assert 'processes-page-list' in body
     assert 'processes-page-detail' in body
+    assert 'renderTerminalPolicyPage' in body
+    assert '/ops/terminal-policy' in body
+    assert 'terminal-policy-summary' in body
+    assert 'terminal-policy-list' in body
+    assert 'terminal-policy-detail' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():
@@ -627,6 +649,23 @@ def test_process_registry_backend_exposes_list_detail_and_guarded_controls(tmp_p
     assert control_payload['data']['process']['process_id'] == 'proc-live-1'
     assert control_payload['data']['event']['kind'] == 'process.kill_requested'
     assert control_payload['data']['audit_entry']['action']['type'] == 'process.kill'
+
+
+def test_terminal_policy_backend_exposes_disabled_terminal_risk_posture():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/terminal-policy')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['mode'] == 'disabled'
+    assert payload['data']['interactive_terminal_enabled'] is False
+    assert 'pty shell access' in payload['data']['blocked_features']
+    assert 'kill process' in payload['data']['allowed_controls']
+    assert payload['data']['revisit_in_milestone'] == 'M4+'
 
 
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
