@@ -9,10 +9,11 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ## Next issues to execute
 
 ### M2 entry unlocked
-M1 is now complete. Continue in the official M2 order:
+M2 is now complete. Continue in the official M3 order:
 
-1. M2-08 — agents page MVP with multi-agent summaries/quick actions
-2. M2-09 — regression tests for dashboard/chat/approvals/stream
+1. M3-01 — cost circuit breaker and per-agent telemetry
+2. M3-02 — panic stop global control
+3. M3-03 — read-only mode
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

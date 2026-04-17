@@ -172,12 +172,14 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - transcript cards render normalized messages, tool calls, and tool results
   - UI scope documented in `docs/architecture/sessions-chat-ui.md`
 
-- M2-08 Agents page MVP with multi-agent summaries/quick actions: PARTIAL
-  - agent summary appears in overview, but no dedicated agents page MVP yet
+- M2-08 Agents page MVP with multi-agent summaries/quick actions: DONE
+  - dedicated `/agents` shell route added in `backend/routes/frontend.py`
+  - agents page renders runtime-backed agent summaries and quick actions in `frontend/app.js`
+  - UI scope documented in `docs/architecture/agents-page-mvp.md`
 
-- M2-09 Regression tests for dashboard/chat/approvals/stream: PARTIAL
-  - dashboard/regression tests exist
-  - chat/approvals/stream not implemented yet
+- M2-09 Regression tests for dashboard/chat/approvals/stream: DONE
+  - `tests/test_command_center_features.py` now covers frontend shell assets, approvals UI/backend, chat transcript+stream, agents page route, and unified stream behavior
+  - regression coverage is exercised in the full `python -m pytest tests/ -q` suite
 
 ### M3 — Operator Control Plane and Cost Governance
 

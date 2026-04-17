@@ -13,6 +13,10 @@
           <p class="eyebrow">Hermes Command Center</p>
           <h1>Operational Control Plane</h1>
           <p class="lede">Real Hermes runtime state, durable event history, and minimal operator actions over local/Tailscale access.</p>
+          <nav class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/agents">Agents Page</a>
+          </nav>
         </div>
         <div class="hero-card">
           <div id="auth-status">Checking session…</div>
@@ -58,6 +62,13 @@
         <article>
           <div class="panel-header"><h2>System Health</h2><p id="system-summary" class="panel-caption">Loading system status…</p></div>
           <ul id="system-health" class="item-list"></ul>
+        </article>
+      </section>
+
+      <section id="agents-page-section" class="grid panels">
+        <article>
+          <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
+          <ul id="agents-page-list" class="item-list"></ul>
         </article>
       </section>
 

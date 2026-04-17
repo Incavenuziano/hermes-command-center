@@ -209,6 +209,23 @@ def test_frontend_shell_is_served_from_root():
     assert 'Chat Transcript' in body
     assert 'chat-transcript' in body
     assert 'chat-stream-status' in body
+    assert 'Agents Page' in body
+    assert '/agents' in body
+
+
+def test_agents_page_is_served_with_same_frontend_shell():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/agents')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'Agents Page' in body
+    assert 'agents-page-list' in body
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -232,6 +249,8 @@ def test_frontend_javascript_bundle_is_served():
     assert '/ops/chat/transcript' in body
     assert '/ops/chat/stream' in body
     assert 'chat-stream-status' in body
+    assert 'renderAgentsPage' in body
+    assert 'agents-page-list' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

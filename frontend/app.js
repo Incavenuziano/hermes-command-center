@@ -293,6 +293,44 @@ function renderApprovals(items) {
   }
 }
 
+function renderAgentsPage(agents, sessions, processes) {
+  const root = clearRoot('agents-page-list');
+  if (!agents.length) {
+    renderEmpty(root, 'No agents yet');
+    return;
+  }
+  for (const agent of agents) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = `${agent.agent_id} · ${agent.status}`;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    const relatedSession = sessions.find(item => item.status === 'active') || sessions[0];
+    const runningProcess = processes.find(item => item.status === 'running');
+    meta.textContent = `${agent.role || 'worker'} · last seen ${agent.last_seen_at || 'n/a'}`;
+    li.append(title, meta);
+    const controls = document.createElement('div');
+    controls.className = 'actions-row';
+    if (relatedSession) {
+      controls.append(actionButton('Open Session', async () => {
+        activeSessionId = relatedSession.session_id;
+        await loadSessionDetail(relatedSession.session_id);
+        await loadChatTranscript(relatedSession.session_id);
+        openChatStream(relatedSession.session_id);
+      }));
+    }
+    if (runningProcess) {
+      controls.append(actionButton('Kill Process', async () => {
+        await handleProcessKill(runningProcess.process_id);
+      }, 'danger'));
+    }
+    li.append(controls);
+    root.appendChild(li);
+  }
+}
+
 async function fetchOverview() {
   const session = await fetchJson('/auth/session');
   setText('auth-status', session.data.authenticated
@@ -315,6 +353,7 @@ async function fetchOverview() {
   renderEvents(overview.data.events || []);
   renderApprovals(approvals.data.items || []);
   renderSystemHealth(systemInfo.data, health.data);
+  renderAgentsPage(overview.data.agents || [], overview.data.sessions || [], overview.data.processes || []);
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;

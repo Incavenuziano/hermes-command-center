@@ -64,6 +64,16 @@ h1, h2, p {
   flex-direction: column;
   gap: 10px;
 }
+.nav-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.nav-links a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 14px;
+}
 .item-list {
   list-style: none;
   padding: 0;
