@@ -139,9 +139,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - dashboard data surfaces are zero-token and runtime-backed
   - may still need closer alignment with official M2 acceptance criteria
 
-- M2-02 Dashboard page with health/agents/cron/approvals/recent events: PARTIAL
-  - dashboard page exists with agents, sessions, processes, cron jobs, recent events
-  - approvals surface is not implemented yet
+- M2-02 Dashboard page with health/agents/cron/approvals/recent events: DONE
+  - dashboard page renders agents, sessions, processes, cron jobs, approvals, recent events, session detail, and chat transcript
+  - explicit system health panel now consumes `/system/info` and `/health`
+  - dashboard scope documented in `docs/architecture/dashboard-scope.md`
 
 - M2-03 Sessions and session list API: DONE
   - overview and session detail exist

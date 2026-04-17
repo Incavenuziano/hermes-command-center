@@ -204,6 +204,8 @@ def test_frontend_shell_is_served_from_root():
     assert '/static/app.js' in body
     assert 'Approvals' in body
     assert 'approvals-list' in body
+    assert 'System Health' in body
+    assert 'system-health' in body
     assert 'Chat Transcript' in body
     assert 'chat-transcript' in body
     assert 'chat-stream-status' in body
@@ -223,6 +225,9 @@ def test_frontend_javascript_bundle_is_served():
     assert 'fetchOverview' in body
     assert 'renderApprovals' in body
     assert '/ops/approvals' in body
+    assert 'renderSystemHealth' in body
+    assert '/system/info' in body
+    assert '/health' in body
     assert 'renderChatTranscript' in body
     assert '/ops/chat/transcript' in body
     assert '/ops/chat/stream' in body

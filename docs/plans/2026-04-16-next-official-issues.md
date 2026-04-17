@@ -11,9 +11,8 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M1 is now complete. Continue in the official M2 order:
 
-1. M2-02 — dashboard completion against official scope
-2. M2-08 — agents page MVP with multi-agent summaries/quick actions
-3. M2-09 — regression tests for dashboard/chat/approvals/stream
+1. M2-08 — agents page MVP with multi-agent summaries/quick actions
+2. M2-09 — regression tests for dashboard/chat/approvals/stream
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

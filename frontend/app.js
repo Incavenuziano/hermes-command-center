@@ -45,6 +45,31 @@ async function loadSessionDetail(sessionId) {
   setText('session-detail', JSON.stringify(payload.data.session, null, 2));
 }
 
+function renderSystemHealth(systemInfo, health) {
+  const root = clearRoot('system-health');
+  const items = [
+    { label: 'Service', value: systemInfo.service || 'unknown' },
+    { label: 'Bind', value: systemInfo.bind || 'unknown' },
+    { label: 'Auth', value: systemInfo.auth_mode || 'unknown' },
+    { label: 'Overall', value: health.overall_status || 'unknown' },
+    { label: 'Runtime', value: health.runtime?.status || 'unknown' },
+    { label: 'Event Bus', value: health.event_bus?.status || 'unknown' },
+  ];
+  setText('system-summary', `${systemInfo.environment || 'unknown'} · ${health.overall_status || 'unknown'}`);
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = item.label;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    meta.textContent = item.value;
+    li.append(title, meta);
+    root.appendChild(li);
+  }
+}
+
 function renderChatTranscript(items) {
   const root = clearRoot('chat-transcript');
   if (!items.length) {
@@ -276,6 +301,8 @@ async function fetchOverview() {
 
   const overview = await fetchJson('/ops/overview');
   const approvals = await fetchJson('/ops/approvals');
+  const systemInfo = await fetchJson('/system/info');
+  const health = await fetchJson('/health');
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
   setText('count-sessions', String(overview.data.counts.sessions));
@@ -287,6 +314,7 @@ async function fetchOverview() {
   renderCron(overview.data.cron_jobs || []);
   renderEvents(overview.data.events || []);
   renderApprovals(approvals.data.items || []);
+  renderSystemHealth(systemInfo.data, health.data);
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;
