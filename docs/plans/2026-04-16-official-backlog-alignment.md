@@ -73,8 +73,9 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ### M1 — Secure Skeleton, Contracts, and Event Bus
 
-- M1-01 Final frontend strategy: PARTIAL
-  - frontend exists and is working, but I have not yet verified that the explicit strategy decision doc matches the official issue intent
+- M1-01 Final frontend strategy: DONE
+  - decision recorded in `docs/architecture/frontend-strategy.md`
+  - minimal/no-build frontend selected with concrete tradeoff analysis against React/TypeScript and lightweight alternatives
 
 - M1-02 Backend application skeleton/config/SQLite setup: DONE
   - backend skeleton, config, stdlib HTTP, routes, tests, and use of Hermes SQLite runtime source are in place
