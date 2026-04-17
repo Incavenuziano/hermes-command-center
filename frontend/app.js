@@ -280,6 +280,97 @@ function renderTerminalPolicyPage(policy) {
   setText('terminal-policy-detail', JSON.stringify(policy, null, 2));
 }
 
+function renderMemoryPage(payload) {
+  const items = payload.items || [];
+  const root = clearRoot('memory-page-list');
+  const counts = payload.counts || {};
+  setText('memory-page-summary', `${counts.memory || 0} memory / ${counts.user || 0} user entries`);
+  if (!items.length) {
+    renderEmpty(root, 'No memory entries yet');
+    setText('memory-page-detail', 'No memory entry selected.');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.append(actionButton(`${item.scope} · ${item.preview || item.text}`, () => setText('memory-page-detail', JSON.stringify(item, null, 2))));
+    root.appendChild(li);
+  }
+  setText('memory-page-detail', JSON.stringify(items[0], null, 2));
+}
+
+function renderSkillsPage(payload) {
+  const items = payload.items || [];
+  const root = clearRoot('skills-page-list');
+  setText('skills-page-summary', `${payload.count || items.length} skill(s)`);
+  if (!items.length) {
+    renderEmpty(root, 'No skills yet');
+    setText('skills-page-detail', 'No skill selected.');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.append(actionButton(item.skill_id, () => setText('skills-page-detail', JSON.stringify(item, null, 2))));
+    root.appendChild(li);
+  }
+  setText('skills-page-detail', JSON.stringify(items[0], null, 2));
+}
+
+function renderFilesPage(payload) {
+  const items = payload.items || [];
+  const root = clearRoot('files-page-list');
+  setText('files-page-summary', `${payload.count || items.length} file(s)`);
+  if (!items.length) {
+    renderEmpty(root, 'No files yet');
+    setText('files-page-detail', 'No file selected.');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.append(actionButton(item.path, () => setText('files-page-detail', JSON.stringify(item, null, 2))));
+    root.appendChild(li);
+  }
+  setText('files-page-detail', JSON.stringify(items[0], null, 2));
+}
+
+function renderProfilesPage(payload) {
+  const items = payload.items || [];
+  const root = clearRoot('profiles-page-list');
+  setText('profiles-page-summary', `active ${payload.active_profile_id || 'none'} · ${payload.count || items.length} profile(s)`);
+  if (!items.length) {
+    renderEmpty(root, 'No profiles yet');
+    setText('profiles-page-detail', 'No profile selected.');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.append(actionButton(item.label || item.id, () => setText('profiles-page-detail', JSON.stringify(item, null, 2))));
+    root.appendChild(li);
+  }
+  setText('profiles-page-detail', JSON.stringify(items[0], null, 2));
+}
+
+function renderChannelsPage(payload) {
+  const items = payload.channels || [];
+  const root = clearRoot('channels-page-list');
+  setText('channels-page-summary', `${payload.gateway?.status || 'unknown'} gateway · ${payload.count || items.length} channel(s)`);
+  if (!items.length) {
+    renderEmpty(root, 'No channels yet');
+    setText('channels-page-detail', JSON.stringify(payload.gateway || {}, null, 2));
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    li.append(actionButton(item.label || item.id, () => setText('channels-page-detail', JSON.stringify({ gateway: payload.gateway, channel: item }, null, 2))));
+    root.appendChild(li);
+  }
+  setText('channels-page-detail', JSON.stringify({ gateway: payload.gateway, channel: items[0] }, null, 2));
+}
+
 function renderCron(items) {
   const root = clearRoot('cron-list');
   if (!items.length) {
@@ -493,6 +584,11 @@ async function fetchOverview() {
   const cronHistory = await fetchJson('/ops/cron/history');
   const processesRegistry = await fetchJson('/ops/processes');
   const terminalPolicy = await fetchJson('/ops/terminal-policy');
+  const memoryPayload = await fetchJson('/ops/memory');
+  const skillsPayload = await fetchJson('/ops/skills');
+  const filesPayload = await fetchJson('/ops/files');
+  const profilesPayload = await fetchJson('/ops/profiles');
+  const gatewayPayload = await fetchJson('/ops/gateway');
   await loadActivityPage();
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
@@ -510,6 +606,11 @@ async function fetchOverview() {
   renderCronPage(cronJobs.data.items || [], cronHistory.data.items || []);
   renderProcessesPage(processesRegistry.data.items || []);
   renderTerminalPolicyPage(terminalPolicy.data || {});
+  renderMemoryPage(memoryPayload.data || {});
+  renderSkillsPage(skillsPayload.data || {});
+  renderFilesPage(filesPayload.data || {});
+  renderProfilesPage(profilesPayload.data || {});
+  renderChannelsPage(gatewayPayload.data || {});
 
   if ((overview.data.sessions || []).length) {
     activeSessionId = overview.data.sessions[0].session_id;

@@ -240,16 +240,37 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ### M4 — Hermes Knowledge and Configuration Surfaces
 
-- M4-01 Memory backend routes and summaries: NOT STARTED
-- M4-02 Memory page: NOT STARTED
-- M4-03 Skills backend routes and metadata views: NOT STARTED
-- M4-04 Skills browser UI: NOT STARTED
-- M4-05 Safe files/workspace backend: NOT STARTED
-- M4-06 Files/workspace browser UI: NOT STARTED
-- M4-07 Profiles backend with re-auth rules: NOT STARTED
-- M4-08 Profiles page: NOT STARTED
-- M4-09 Gateway/channels backend status views with redaction: NOT STARTED
-- M4-10 Channels/gateway UI page: NOT STARTED
+- M4-01 Memory backend routes and summaries: DONE
+  - explicit memory summary route added at `GET /ops/memory`
+  - backend aggregates `memory` and `user` scopes from Hermes home into a normalized summary contract
+  - backend/UI scope documented in `docs/architecture/memory-backend-and-ui.md`
+- M4-02 Memory page: DONE
+  - dedicated `/memory` route and list/detail UI added
+  - frontend consumes the explicit memory summary backend
+- M4-03 Skills backend routes and metadata views: DONE
+  - explicit skills metadata route added at `GET /ops/skills`
+  - backend enumerates available skill directories and `SKILL.md` summaries
+  - backend/UI scope documented in `docs/architecture/skills-backend-and-ui.md`
+- M4-04 Skills browser UI: DONE
+  - dedicated `/skills` route and list/detail UI added
+- M4-05 Safe files/workspace backend: DONE
+  - explicit workspace files route added at `GET /ops/files`
+  - backend exposes read-only file metadata and previews rooted to Hermes workspace
+  - backend/UI scope documented in `docs/architecture/files-backend-and-ui.md`
+- M4-06 Files/workspace browser UI: DONE
+  - dedicated `/files` route and list/detail UI added
+- M4-07 Profiles backend with re-auth rules: DONE
+  - explicit profiles route added at `GET /ops/profiles`
+  - backend exposes active profile plus per-profile `requires_reauth` semantics
+  - backend/UI scope documented in `docs/architecture/profiles-backend-and-ui.md`
+- M4-08 Profiles page: DONE
+  - dedicated `/profiles` route and list/detail UI added
+- M4-09 Gateway/channels backend status views with redaction: DONE
+  - explicit gateway/channels status route added at `GET /ops/gateway`
+  - backend redacts tokens/secrets before rendering UI-facing state
+  - backend/UI scope documented in `docs/architecture/gateway-backend-and-ui.md`
+- M4-10 Channels/gateway UI page: DONE
+  - dedicated `/channels` route and list/detail UI added
 
 ### M5 — Hardening, Resilience, and 1.0 Release Readiness
 

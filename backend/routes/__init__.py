@@ -1,1 +1,1 @@
-from . import approvals, auth, chat, costs, events, frontend, operators, operations, passkeys, runtime, system
+from . import approvals, auth, chat, costs, events, frontend, knowledge, operators, operations, passkeys, runtime, system

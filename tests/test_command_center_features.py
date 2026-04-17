@@ -136,6 +136,31 @@ def _write_runtime_fixture(base: Path) -> None:
         ],
         'updated_at': '2026-04-16T20:00:00-03:00'
     }), encoding='utf-8')
+    (base / 'memory.json').write_text(json.dumps({
+        'memory': [
+            {'id': 'mem-1', 'text': 'Use isolated Hermes Obsidian vault', 'updated_at': '2026-04-16T18:00:00Z'},
+        ],
+        'user': [
+            {'id': 'user-1', 'text': 'Danilo prefers practical end-to-end validation', 'updated_at': '2026-04-16T18:05:00Z'},
+        ],
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
+    (base / 'skills' / 'command-center-demo-skill').mkdir(parents=True, exist_ok=True)
+    (base / 'skills' / 'command-center-demo-skill' / 'SKILL.md').write_text('# Demo Skill\n\nUsed for test coverage.\n', encoding='utf-8')
+    (base / 'workspace' / 'notes').mkdir(parents=True, exist_ok=True)
+    (base / 'workspace' / 'notes' / 'daily.md').write_text('# Daily\n\nHermes workspace note.\n', encoding='utf-8')
+    (base / 'profiles.json').write_text(json.dumps({
+        'active_profile_id': 'default',
+        'profiles': [
+            {'id': 'default', 'label': 'Default Operator', 'sensitivity': 'standard', 'requires_reauth': False},
+            {'id': 'production', 'label': 'Production Operator', 'sensitivity': 'high', 'requires_reauth': True},
+        ],
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
+    (base / 'gateway.json').write_text(json.dumps({
+        'gateway': {'status': 'connected', 'transport': 'telegram', 'bot_token': '123456:super-secret-token'},
+        'channels': [
+            {'id': 'telegram:416112154', 'label': 'Danilo DM', 'platform': 'telegram', 'delivery_state': 'connected', 'secret': 'chat-secret-value'},
+        ],
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 def test_ops_overview_is_available_without_authentication():
@@ -297,6 +322,81 @@ def test_terminal_strategy_page_is_served_with_risk_posture_panels():
     assert 'terminal-policy-detail' in body
 
 
+def test_memory_page_is_served_with_summary_and_detail_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/memory')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'Memory Page' in body
+    assert 'memory-page-list' in body
+    assert 'memory-page-detail' in body
+
+
+def test_skills_page_is_served_with_browser_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/skills')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'Skills Page' in body
+    assert 'skills-page-list' in body
+    assert 'skills-page-detail' in body
+
+
+def test_files_page_is_served_with_workspace_browser_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/files')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'Files Page' in body
+    assert 'files-page-list' in body
+    assert 'files-page-detail' in body
+
+
+def test_profiles_page_is_served_with_reauth_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/profiles')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'Profiles Page' in body
+    assert 'profiles-page-list' in body
+    assert 'profiles-page-detail' in body
+
+
+def test_channels_page_is_served_with_gateway_panels():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/channels')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'Channels Page' in body
+    assert 'channels-page-list' in body
+    assert 'channels-page-detail' in body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -339,6 +439,21 @@ def test_frontend_javascript_bundle_is_served():
     assert 'terminal-policy-summary' in body
     assert 'terminal-policy-list' in body
     assert 'terminal-policy-detail' in body
+    assert 'renderMemoryPage' in body
+    assert '/ops/memory' in body
+    assert 'memory-page-list' in body
+    assert 'renderSkillsPage' in body
+    assert '/ops/skills' in body
+    assert 'skills-page-list' in body
+    assert 'renderFilesPage' in body
+    assert '/ops/files' in body
+    assert 'files-page-list' in body
+    assert 'renderProfilesPage' in body
+    assert '/ops/profiles' in body
+    assert 'profiles-page-list' in body
+    assert 'renderChannelsPage' in body
+    assert '/ops/gateway' in body
+    assert 'channels-page-list' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():
@@ -666,6 +781,99 @@ def test_terminal_policy_backend_exposes_disabled_terminal_risk_posture():
     assert 'pty shell access' in payload['data']['blocked_features']
     assert 'kill process' in payload['data']['allowed_controls']
     assert payload['data']['revisit_in_milestone'] == 'M4+'
+
+
+def test_memory_backend_exposes_summary_counts_and_items(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/memory')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['counts']['memory'] == 1
+    assert payload['data']['counts']['user'] == 1
+    assert payload['data']['items'][0]['scope'] in {'memory', 'user'}
+
+
+def test_skills_backend_exposes_metadata_views(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/skills')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['count'] == 1
+    assert payload['data']['items'][0]['skill_id'] == 'command-center-demo-skill'
+
+
+def test_files_backend_exposes_safe_workspace_listing_and_preview(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/files')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['count'] >= 1
+    assert payload['data']['items'][0]['path']
+    assert payload['data']['items'][0]['preview']
+
+
+def test_profiles_backend_exposes_reauth_rules(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/profiles')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['active_profile_id'] == 'default'
+    assert any(item['requires_reauth'] for item in payload['data']['items'])
+
+
+def test_gateway_backend_exposes_redacted_channel_status(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/gateway')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['gateway']['status'] == 'connected'
+    assert payload['data']['gateway']['bot_token_redacted'].endswith('oken')
+    assert payload['data']['channels'][0]['secret_redacted'].startswith('***')
 
 
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):

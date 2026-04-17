@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M2 is now complete. Continue in the official M3 order:
 
-1. M4-01 — memory backend routes and summaries
-2. M4-02 — memory page
-3. M4-03 — skills backend routes and metadata views
+1. M5-01 — final security audit and regression gate
+2. M5-02 — performance budget validation/optimization
+3. M5-03 — backup/export/restore for Command Center state
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.
