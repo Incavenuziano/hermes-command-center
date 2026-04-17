@@ -480,3 +480,50 @@ def test_runtime_event_ingest_updates_derived_state_and_feed():
     assert events_status == 200
     assert events_payload['data']['items'][0]['kind'] == 'session.started'
     assert events_payload['data']['items'][0]['source'] == 'hermes-runtime'
+
+
+def test_approvals_backend_queues_and_resolves_items(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        list_status, _, list_payload = _request(server, '/ops/approvals')
+        create_status, _, create_payload = _request(
+            server,
+            '/ops/approvals',
+            method='POST',
+            json_body={
+                'kind': 'clarify',
+                'title': 'Need operator decision',
+                'summary': 'Choose rollout mode',
+                'choices': ['safe', 'fast'],
+                'source': 'runtime-test',
+            },
+        )
+        item_id = create_payload['data']['item']['id']
+        resolve_status, _, resolve_payload = _request(
+            server,
+            '/ops/approvals/resolve',
+            method='POST',
+            json_body={'item_id': item_id, 'decision': 'safe'},
+        )
+        final_status, _, final_payload = _request(server, '/ops/approvals')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert list_status == 200
+    assert list_payload['data']['count'] == 0
+    assert create_status == 200
+    assert create_payload['data']['item']['status'] == 'pending'
+    assert create_payload['data']['item']['kind'] == 'clarify'
+    assert resolve_status == 200
+    assert resolve_payload['data']['item']['status'] == 'resolved'
+    assert resolve_payload['data']['item']['decision'] == 'safe'
+    assert final_status == 200
+    assert final_payload['data']['count'] == 1
+    assert final_payload['data']['items'][0]['status'] == 'resolved'

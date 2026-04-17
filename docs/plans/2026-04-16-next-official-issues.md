@@ -11,11 +11,10 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M1 is now complete. Continue in the official M2 order:
 
-1. M2-05 — approvals backend
-2. M2-06 — approvals UI
-3. M2-04 — Hermes-native chat streaming route/protocol
-4. M2-07 — sessions/chat UI
-5. M2-02 — dashboard completion against official scope
+1. M2-06 — approvals UI
+2. M2-04 — Hermes-native chat streaming route/protocol
+3. M2-07 — sessions/chat UI
+4. M2-02 — dashboard completion against official scope
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

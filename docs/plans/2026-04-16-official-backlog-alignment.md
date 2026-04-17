@@ -148,7 +148,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 - M2-04 Hermes-native chat streaming route and protocol: NOT STARTED
 
-- M2-05 Approval and clarify queue backend: NOT STARTED
+- M2-05 Approval and clarify queue backend: DONE
+  - backend queue implemented in `backend/approvals.py` with routes in `backend/routes/approvals.py`
+  - approval lifecycle persists locally and emits `approval.created` / `approval.resolved` events
+  - contract and persistence are documented in `docs/architecture/approvals-backend.md`
 
 - M2-06 Approvals page and global pending-approvals tray: NOT STARTED
 
