@@ -53,13 +53,24 @@ class UsageSurface:
             key=lambda item: (float(item.get('actual_cost_usd') or 0.0), int(item.get('input_tokens') or 0) + int(item.get('output_tokens') or 0) + int(item.get('reasoning_tokens') or 0)),
             reverse=True,
         )[:5]
+        performance = release_hardening.performance_snapshot()
+        load_smoke = release_hardening.load_smoke()
+        breaker = cost_payload['circuit_breaker']
+        totals = cost_payload['totals']
+        summary_cards = [
+            {'label': 'Total Tokens', 'value': totals['total_tokens'], 'tone': 'neutral'},
+            {'label': 'Actual Cost USD', 'value': totals['actual_cost_usd'], 'tone': 'neutral'},
+            {'label': 'Circuit Breaker', 'value': 'tripped' if breaker.get('tripped') else 'healthy', 'tone': 'danger' if breaker.get('tripped') else 'success'},
+            {'label': 'Load Smoke Failures', 'value': load_smoke.get('failures', 0), 'tone': 'danger' if load_smoke.get('failures', 0) else 'success'},
+        ]
         return {
-            'totals': cost_payload['totals'],
+            'totals': totals,
             'agent_breakdown': cost_payload['agents'],
-            'circuit_breaker': cost_payload['circuit_breaker'],
-            'performance': release_hardening.performance_snapshot(),
-            'load_smoke': release_hardening.load_smoke(),
+            'circuit_breaker': breaker,
+            'performance': performance,
+            'load_smoke': load_smoke,
             'top_sessions': top_sessions,
+            'summary_cards': summary_cards,
         }
 
 

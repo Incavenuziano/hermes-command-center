@@ -236,6 +236,19 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'Conversar' in body
     assert 'Calendario' in body
     assert 'API&#x27;s' in body or 'API\'s' in body or 'API’s' in body or 'API&apos;s' in body
+    assert 'sidebar-brand-mark' in body
+    assert 'command-center' in body
+    assert 'sidebar-footer' in body
+    assert 'operator-avatar' in body
+    assert 'topbar-breadcrumb' in body
+    assert 'global-search-shortcut' in body
+    assert 'page-theme-pill' in body
+    assert 'page-filter-button' in body
+    assert 'page-export-button' in body
+    assert 'dashboard-stat-grid' in body
+    assert 'dashboard-live-activity' in body
+    assert 'dashboard-top-agents' in body
+    assert 'dashboard-cron-overview' in body
 
 
 def test_agents_page_is_served_with_same_frontend_shell():
@@ -251,6 +264,9 @@ def test_agents_page_is_served_with_same_frontend_shell():
     assert headers['Content-Type'].startswith('text/html')
     assert 'Agents Page' in body
     assert 'agents-page-list' in body
+    assert 'agents-page-detail' in body
+    assert 'agents-page-stats' in body
+    assert 'agents-page-sessions' in body
 
 
 def test_cron_page_is_served_with_run_history_and_output_panels():
@@ -268,6 +284,8 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
     assert 'cron-page-list' in body
     assert 'cron-run-history' in body
     assert 'cron-output-inspection' in body
+    assert 'cron-summary-grid' in body
+    assert 'cron-quick-actions' in body
 
 
 def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_panels():
@@ -286,6 +304,8 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
     assert 'activity-drilldown' in body
     assert 'activity-window-summary' in body
     assert 'Load More Activity' in body
+    assert 'activity-filter-bar' in body
+    assert 'activity-summary-grid' in body
 
 
 def test_processes_page_is_served_with_registry_and_detail_panels():
@@ -417,6 +437,9 @@ def test_usage_page_is_served_with_operational_panels():
     assert 'usage-detail' in body
     assert 'usage-breaker-form' in body
     assert 'usage-agent-breakdown' in body
+    assert 'usage-stat-grid' in body
+    assert 'usage-top-sessions' in body
+    assert 'usage-performance-summary' in body
 
 
 def test_new_navigation_placeholder_routes_are_served():
@@ -450,6 +473,48 @@ def test_new_navigation_placeholder_routes_are_served():
         server.server_close()
 
 
+def test_frontend_shell_exposes_premium_chat_and_sessions_surfaces():
+    server, thread = _start_test_server()
+    try:
+        chat_status, _, chat_body = _request(server, '/chat')
+        sessions_status, _, sessions_body = _request(server, '/sessions')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert chat_status == 200
+    assert 'chat-session-summary' in chat_body
+    assert 'chat-transcript' in chat_body
+    assert 'chat-stream-status' in chat_body
+    assert 'chat-inspector' in chat_body
+    assert sessions_status == 200
+    assert 'sessions-list' in sessions_body
+    assert 'session-detail' in sessions_body
+    assert 'sessions-stats' in sessions_body
+    assert 'sessions-related-transcript' in sessions_body
+
+
+def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
+    server, thread = _start_test_server()
+    try:
+        doctor_status, _, doctor_body = _request(server, '/doctor')
+        logs_status, _, logs_body = _request(server, '/logs')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert doctor_status == 200
+    assert 'doctor-list' in doctor_body
+    assert 'doctor-detail' in doctor_body
+    assert 'doctor-summary-grid' in doctor_body
+    assert logs_status == 200
+    assert 'logs-list' in logs_body
+    assert 'logs-filter-bar' in logs_body
+    assert 'logs-detail' in logs_body
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -463,25 +528,37 @@ def test_frontend_javascript_bundle_is_served():
     assert 'javascript' in headers['Content-Type']
     assert 'fetchOverview' in body
     assert 'renderApprovals' in body
+    assert 'renderDashboardPremium' in body
     assert '/ops/approvals' in body
     assert 'renderSystemHealth' in body
     assert '/system/info' in body
     assert '/health' in body
     assert 'renderChatTranscript' in body
+    assert 'renderSessionsPremium' in body
     assert '/ops/chat/transcript' in body
     assert '/ops/chat/stream' in body
     assert 'chat-stream-status' in body
+    assert 'chat-inspector' in body
+    assert 'sessions-stats' in body
+    assert 'sessions-related-transcript' in body
     assert 'renderAgentsPage' in body
     assert 'agents-page-list' in body
+    assert 'agents-page-detail' in body
+    assert 'agents-page-stats' in body
+    assert 'agents-page-sessions' in body
     assert 'renderCronPage' in body
     assert '/ops/cron/jobs' in body
     assert '/ops/cron/history' in body
     assert 'cron-run-history' in body
+    assert 'cron-summary-grid' in body
+    assert 'cron-quick-actions' in body
     assert 'renderActivityPage' in body
     assert '/ops/activity' in body
     assert 'activity-page-list' in body
     assert 'activity-drilldown' in body
     assert 'activity-load-more' in body
+    assert 'activity-filter-bar' in body
+    assert 'activity-summary-grid' in body
     assert 'renderProcessesPage' in body
     assert '/ops/processes' in body
     assert '/ops/processes/control' in body
@@ -492,6 +569,11 @@ def test_frontend_javascript_bundle_is_served():
     assert 'terminal-policy-summary' in body
     assert 'terminal-policy-list' in body
     assert 'terminal-policy-detail' in body
+    assert 'renderDoctorPremium' in body
+    assert 'doctor-summary-grid' in body
+    assert 'renderLogsPremium' in body
+    assert 'logs-filter-bar' in body
+    assert 'logs-detail' in body
     assert 'renderMemoryPage' in body
     assert '/ops/memory' in body
     assert 'memory-page-list' in body
@@ -511,6 +593,9 @@ def test_frontend_javascript_bundle_is_served():
     assert '/ops/usage' in body
     assert 'usage-breaker-form' in body
     assert 'usage-agent-breakdown' in body
+    assert 'usage-stat-grid' in body
+    assert 'usage-top-sessions' in body
+    assert 'usage-performance-summary' in body
     assert 'renderFilesPage' in body
     assert '/ops/files' in body
     assert 'files-page-list' in body
@@ -525,6 +610,15 @@ def test_frontend_javascript_bundle_is_served():
     assert '/ops/gateway-runtime' in body
     assert 'toggleSidebar' in body
     assert 'renderCurrentPage' in body
+    assert 'restoreShellPreferences' in body
+    assert 'persistShellPreferences' in body
+    assert 'topbar-breadcrumb' in body
+    assert 'global-search-shortcut' in body
+    assert 'page-theme-pill' in body
+    assert 'dashboard-stat-grid' in body
+    assert 'dashboard-live-activity' in body
+    assert 'dashboard-top-agents' in body
+    assert 'dashboard-cron-overview' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():
@@ -1034,6 +1128,8 @@ def test_usage_backend_exposes_operational_snapshot_and_agent_breakdown(tmp_path
     assert payload['data']['performance']['snapshot']['route_count'] >= 1
     assert payload['data']['load_smoke']['failures'] == 0
     assert payload['data']['top_sessions'][0]['session_id'] == 'sess-live-1'
+    assert payload['data']['summary_cards']
+    assert payload['data']['summary_cards'][0]['label']
 
 
 def test_security_audit_gate_exposes_overall_regression_status():

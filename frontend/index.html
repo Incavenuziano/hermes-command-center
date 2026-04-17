@@ -10,8 +10,11 @@
     <main class="app-shell" id="app-shell">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-          <p class="eyebrow">Hermes Command Center</p>
-          <strong>Control Plane</strong>
+          <div class="sidebar-brand-mark" id="sidebar-brand-mark" aria-hidden="true">✦</div>
+          <div class="sidebar-brand-copy">
+            <p class="eyebrow">Hermes</p>
+            <strong>command-center</strong>
+          </div>
         </div>
 
         <nav class="sidebar-nav">
@@ -58,26 +61,50 @@
             <a href="/config" data-nav-item="config">Config</a>
           </section>
         </nav>
+        <div class="sidebar-footer" id="sidebar-footer">
+          <div class="operator-chip">
+            <div class="operator-avatar" id="operator-avatar">OP</div>
+            <div class="operator-copy">
+              <strong>operator</strong>
+              <span>trusted-local · control plane</span>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <div class="main-column">
         <header class="topbar">
           <div class="topbar-left">
             <button id="sidebar-toggle" type="button" class="icon-button">☰</button>
-            <div>
-              <p class="eyebrow">Hermes</p>
-              <h1 id="page-heading">Dashboard</h1>
+            <div class="topbar-breadcrumb" id="topbar-breadcrumb">
+              <span>Hermes</span>
+              <span class="breadcrumb-sep">/</span>
+              <span id="breadcrumb-current">Dashboard</span>
             </div>
           </div>
           <div class="topbar-right">
-            <input id="global-search" type="search" placeholder="Procurar" aria-label="Procurar no menu">
+            <label class="global-search-shell" for="global-search">
+              <input id="global-search" type="search" placeholder="Search across surfaces" aria-label="Procurar no menu">
+              <span class="global-search-shortcut" id="global-search-shortcut">⌘K</span>
+            </label>
             <span id="gateway-runtime-status" class="status-pill offline">offline</span>
             <button id="gateway-runtime-button" type="button" class="action-button danger">Kill Hermes</button>
             <button id="refresh-button" type="button" class="action-button">Refresh</button>
           </div>
         </header>
+        <div class="page-toolbar">
+          <div>
+            <p class="eyebrow">Hermes</p>
+            <h1 id="page-heading">Dashboard</h1>
+          </div>
+          <div class="page-toolbar-actions">
+            <span class="theme-pill" id="page-theme-pill">Premium ops</span>
+            <button id="page-filter-button" type="button" class="action-button ghost">Filter</button>
+            <button id="page-export-button" type="button" class="action-button">Export</button>
+          </div>
+        </div>
 
-        <section id="dashboard-section" class="page-section grid stats" data-page="dashboard">
+        <section id="dashboard-section" class="page-section grid stats dashboard-stat-grid" data-page="dashboard">
           <article><h2>Agents</h2><p id="count-agents">—</p></article>
           <article><h2>Sessions</h2><p id="count-sessions">—</p></article>
           <article><h2>Processes</h2><p id="count-processes">—</p></article>
@@ -85,8 +112,8 @@
         </section>
 
         <section id="dashboard-overview-section" class="page-section grid panels panels-three" data-page="dashboard">
-          <article>
-            <div class="panel-header"><h2>Approvals</h2><p id="approvals-summary" class="panel-caption">No pending approvals.</p></div>
+          <article id="dashboard-live-activity">
+            <div class="panel-header"><h2>Live Activity</h2><p id="approvals-summary" class="panel-caption">No pending approvals.</p></div>
             <ul id="approvals-list" class="item-list"></ul>
           </article>
           <article>
@@ -97,11 +124,25 @@
             <div class="panel-header"><h2>System Health</h2><p id="system-summary" class="panel-caption">Loading system status…</p></div>
             <ul id="system-health" class="item-list"></ul>
           </article>
+          <article id="dashboard-top-agents">
+            <div class="panel-header"><h2>Top Agents</h2><p id="dashboard-top-agents-summary" class="panel-caption">Highest activity agents.</p></div>
+            <ul id="dashboard-top-agents-list" class="item-list"></ul>
+          </article>
+          <article id="dashboard-cron-overview">
+            <div class="panel-header"><h2>Cron Overview</h2><p id="dashboard-cron-summary" class="panel-caption">Scheduled jobs and latest status.</p></div>
+            <ul id="dashboard-cron-list" class="item-list"></ul>
+          </article>
         </section>
 
         <section id="activity-page-section" class="page-section grid panels" data-page="activity">
           <article>
             <div class="panel-header"><h2>Activity Page</h2><p id="activity-window-summary" class="panel-caption">Loading activity timeline…</p></div>
+            <div id="activity-summary-grid" class="usage-stat-grid"></div>
+            <div id="activity-filter-bar" class="actions-row">
+              <button id="activity-filter-all" type="button" class="action-button ghost">All</button>
+              <button id="activity-filter-approvals" type="button" class="action-button ghost">Approvals</button>
+              <button id="activity-filter-process" type="button" class="action-button ghost">Processes</button>
+            </div>
             <ul id="activity-page-list" class="item-list"></ul>
             <div class="actions-row"><button id="activity-load-more" type="button" class="action-button">Load More Activity</button></div>
           </article>
@@ -114,7 +155,9 @@
         <section id="usage-page-section" class="page-section grid panels" data-page="usage">
           <article>
             <div class="panel-header"><h2>Usage</h2><p id="usage-summary" class="panel-caption">Usage and performance snapshot.</p></div>
+            <div id="usage-stat-grid" class="usage-stat-grid"></div>
             <ul id="usage-list" class="item-list"></ul>
+            <div id="usage-performance-summary" class="usage-performance-summary"></div>
             <form id="usage-breaker-form" class="stack-form">
               <label class="field-label" for="usage-max-cost">Max actual cost (USD)</label>
               <input id="usage-max-cost" type="number" step="0.01" min="0" placeholder="e.g. 5.00">
@@ -126,6 +169,8 @@
           <article>
             <div class="panel-header"><h2>Usage Detail</h2></div>
             <pre id="usage-detail">Loading usage details.</pre>
+            <div class="panel-header"><h2>Top Sessions</h2><p class="panel-caption">Highest cost and token consumers.</p></div>
+            <ul id="usage-top-sessions" class="item-list"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Agent Breakdown</h2><p class="panel-caption">Per-agent token and cost distribution.</p></div>
@@ -138,6 +183,13 @@
             <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
             <ul id="agents-page-list" class="item-list"></ul>
           </article>
+          <article>
+            <div class="panel-header"><h2>Agent Detail</h2></div>
+            <div id="agents-page-stats" class="usage-stat-grid"></div>
+            <pre id="agents-page-detail">Select an agent to inspect details.</pre>
+            <div class="panel-header"><h2>Recent Sessions</h2><p class="panel-caption">Most relevant sessions for the selected agent.</p></div>
+            <ul id="agents-page-sessions" class="item-list"></ul>
+          </article>
         </section>
 
         <section id="chat-page-section" class="page-section grid panels" data-page="chat">
@@ -149,17 +201,22 @@
           <article>
             <div class="panel-header"><h2>Chat Status</h2></div>
             <pre id="chat-stream-status">No session selected.</pre>
+            <div class="panel-header"><h2>Chat Inspector</h2></div>
+            <pre id="chat-inspector">Select a transcript message to inspect details.</pre>
           </article>
         </section>
 
         <section id="sessions-page-section" class="page-section grid panels" data-page="sessions">
           <article>
             <div class="panel-header"><h2>Sessões</h2></div>
+            <div id="sessions-stats" class="usage-stat-grid"></div>
             <ul id="sessions-list" class="item-list"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Session Detail</h2></div>
             <pre id="session-detail">Select a session to inspect details.</pre>
+            <div class="panel-header"><h2>Related Transcript</h2></div>
+            <ul id="sessions-related-transcript" class="item-list"></ul>
           </article>
         </section>
 
@@ -184,6 +241,10 @@
         <section id="cron-page-section" class="page-section grid panels" data-page="cron">
           <article>
             <div class="panel-header"><h2>Cron Page</h2><p class="panel-caption">Run history, output inspection, and guarded actions.</p></div>
+            <div id="cron-summary-grid" class="usage-stat-grid"></div>
+            <div id="cron-quick-actions" class="actions-row">
+              <button id="cron-refresh-button" type="button" class="action-button ghost">Refresh Cron</button>
+            </div>
             <ul id="cron-page-list" class="item-list"></ul>
           </article>
           <article>
@@ -268,6 +329,7 @@
         <section id="doctor-page-section" class="page-section grid panels" data-page="doctor">
           <article>
             <div class="panel-header"><h2>Doctor</h2><p class="panel-caption">Operational diagnostics.</p></div>
+            <div id="doctor-summary-grid" class="usage-stat-grid"></div>
             <ul id="doctor-list" class="item-list"></ul>
           </article>
           <article><div class="panel-header"><h2>Doctor Detail</h2></div><pre id="doctor-detail">Loading doctor data.</pre></article>
@@ -284,8 +346,14 @@
         <section id="logs-page-section" class="page-section grid panels" data-page="logs">
           <article>
             <div class="panel-header"><h2>Logs</h2></div>
+            <div id="logs-filter-bar" class="actions-row">
+              <button id="logs-filter-all" type="button" class="action-button ghost">All</button>
+              <button id="logs-filter-approval" type="button" class="action-button ghost">Approvals</button>
+              <button id="logs-filter-process" type="button" class="action-button ghost">Processes</button>
+            </div>
             <ul id="logs-list" class="item-list"></ul>
           </article>
+          <article><div class="panel-header"><h2>Log Detail</h2></div><pre id="logs-detail">Select a log/event to inspect details.</pre></article>
         </section>
 
         <section id="tailscale-page-section" class="page-section grid panels" data-page="tailscale">

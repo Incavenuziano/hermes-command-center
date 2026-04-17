@@ -71,9 +71,14 @@ const PAGE_META = {
 
 const activePage = PAGE_META[window.location.pathname] || PAGE_META['/'];
 const DESIGN_ADVISOR_AGENT_ID = 'HCC-design-advisor';
+const SHELL_MARKERS = ['topbar-breadcrumb', 'global-search-shortcut', 'page-theme-pill'];
+const DASHBOARD_MARKERS = ['dashboard-stat-grid', 'dashboard-live-activity', 'dashboard-top-agents', 'dashboard-cron-overview'];
+const ACTIVITY_MARKERS = ['activity-filter-bar', 'activity-summary-grid'];
+const OPS_PAGE_MARKERS = ['cron-quick-actions', 'doctor-summary-grid', 'logs-filter-bar', 'logs-detail'];
 let activeChatStream = null;
 let activeSessionId = null;
 let activityPageLimit = 20;
+let activityKindPrefix = '';
 let designAdvisorCatalog = null;
 
 function renderCurrentPage() {
@@ -82,13 +87,33 @@ function renderCurrentPage() {
     document.getElementById(sectionId)?.classList.add('active');
   }
   setText('page-heading', activePage.title);
+  setText('breadcrumb-current', activePage.title);
   document.querySelectorAll('[data-nav-item]').forEach(link => {
     link.classList.toggle('active', link.dataset.navItem === activePage.key);
   });
 }
 
 function toggleSidebar() {
-  document.getElementById('app-shell').classList.toggle('sidebar-collapsed');
+  const shell = document.getElementById('app-shell');
+  shell.classList.toggle('sidebar-collapsed');
+  persistShellPreferences();
+}
+
+function restoreShellPreferences() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem('hcc-shell-preferences') || '{}');
+    if (saved.sidebarCollapsed) {
+      document.getElementById('app-shell')?.classList.add('sidebar-collapsed');
+    }
+  } catch (_) {}
+}
+
+function persistShellPreferences() {
+  const shell = document.getElementById('app-shell');
+  const payload = { sidebarCollapsed: shell?.classList.contains('sidebar-collapsed') || false };
+  try {
+    window.localStorage.setItem('hcc-shell-preferences', JSON.stringify(payload));
+  } catch (_) {}
 }
 
 function filterSidebar(term) {
@@ -127,8 +152,10 @@ function renderChatTranscript(items) {
     content.className = 'chat-content';
     content.textContent = item.content || '(empty)';
     li.append(role, content);
+    li.addEventListener('click', () => setText('chat-inspector', JSON.stringify(item, null, 2)));
     root.appendChild(li);
   }
+  setText('chat-inspector', JSON.stringify(items[0], null, 2));
 }
 
 function renderListInto(rootId, items, formatter, emptyLabel = 'No items yet') {
@@ -167,6 +194,7 @@ async function loadChatTranscript(sessionId) {
   setChatSummary(payload.data.session, payload.data.count || 0);
   const items = payload.data.items || [];
   renderChatTranscript(items);
+  renderListInto('sessions-related-transcript', items.slice(0, 4), item => card(`${item.message_id}. ${item.role || 'unknown'}`, item.content || '(empty)'), 'No transcript preview yet');
   setText('chat-stream-status', `Transcript loaded for ${sessionId}`);
 }
 
@@ -237,12 +265,27 @@ function renderSystemHealth(systemInfo, health) {
 function renderActivityPage(items, retention) {
   const maxItems = retention && typeof retention.max_items === 'number' ? retention.max_items : items.length;
   setText('activity-window-summary', `Showing ${items.length} of ${maxItems} retained event(s). Window size ${activityPageLimit}.`);
+  const summaryRoot = clearRoot('activity-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Visible Events', String(items.length)],
+      ['Retained Max', String(maxItems)],
+      ['Approvals', String(items.filter(item => (item.kind || '').startsWith('approval')).length)],
+      ['Process Events', String(items.filter(item => (item.kind || '').startsWith('process')).length)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
   renderListInto('activity-page-list', items, item => card(`${item.at || 'n/a'} · ${item.kind}`, `${item.source || 'unknown'}`, [actionButton('Inspect Event', () => setText('activity-drilldown', JSON.stringify(item, null, 2)))]), 'No activity events yet');
   setText('activity-drilldown', items.length ? JSON.stringify(items[0], null, 2) : 'No activity item selected.');
 }
 
 async function loadActivityPage() {
-  const payload = await fetchJson(`/ops/activity?limit=${encodeURIComponent(activityPageLimit)}`);
+  const suffix = activityKindPrefix ? `&kind_prefix=${encodeURIComponent(activityKindPrefix)}` : '';
+  const payload = await fetchJson(`/ops/activity?limit=${encodeURIComponent(activityPageLimit)}${suffix}`);
   renderActivityPage(payload.data.items || [], payload.data.retention || {});
 }
 
@@ -252,12 +295,22 @@ function renderApprovals(items) {
   renderListInto('approvals-list', items, item => card(`${item.title} · ${item.status}`, `${item.kind} · ${item.source}`, item.status === 'pending' && Array.isArray(item.choices) ? item.choices.map(choice => actionButton(choice, () => handleApprovalDecision(item.id, choice))) : []), 'No approvals yet');
 }
 
+function renderDashboardPremium(overview, cronJobs) {
+  const agents = overview.agents || [];
+  const cronItems = cronJobs.items || [];
+  renderListInto('dashboard-top-agents-list', agents.slice(0, 4), item => card(`${item.agent_id} · ${item.status}`, `${item.role || 'worker'} · last seen ${item.last_seen_at || 'n/a'}`), 'No agents yet');
+  renderListInto('dashboard-cron-list', cronItems.slice(0, 4), item => card(`${item.name} · ${item.status}`, `${item.schedule || 'manual'} · next ${item.next_run_at || 'n/a'}`), 'No cron jobs yet');
+  setText('dashboard-top-agents-summary', agents.length ? `${agents.length} tracked agent(s)` : 'No agents in overview.');
+  setText('dashboard-cron-summary', cronItems.length ? `${cronItems.length} scheduled cron job(s)` : 'No cron jobs available.');
+}
+
 function renderEvents(items) {
   renderListInto('events-list', items, item => card(`${item.kind}`, `${item.at || 'n/a'} ← ${item.source}`));
-  renderListInto('logs-list', items, item => card(item.kind, `${item.at || 'n/a'} ← ${item.source}`));
+  renderLogsPremium(items);
 }
 
 function renderAgentsPage(agents, sessions, processes) {
+  const selectedAgent = agents[0] || null;
   renderListInto('agents-page-list', agents, agent => {
     const relatedSession = sessions.find(item => item.status === 'active') || sessions[0];
     const runningProcess = processes.find(item => item.status === 'running');
@@ -273,8 +326,42 @@ function renderAgentsPage(agents, sessions, processes) {
     if (runningProcess) {
       controls.push(actionButton('Kill Process', () => handleProcessKill(runningProcess.process_id), 'danger'));
     }
+    controls.push(actionButton('Inspect Agent', () => renderAgentDetail(agent, sessions)));
     return card(`${agent.agent_id} · ${agent.status}`, `${agent.role || 'worker'} · last seen ${agent.last_seen_at || 'n/a'}`, controls);
   }, 'No agents yet');
+  renderAgentDetail(selectedAgent, sessions);
+}
+
+function renderAgentDetail(agent, sessions) {
+  if (!agent) {
+    setText('agents-page-detail', 'No agent selected.');
+    renderListInto('agents-page-sessions', [], () => null, 'No sessions for this agent.');
+    const emptyStats = clearRoot('agents-page-stats');
+    if (emptyStats) emptyStats.textContent = 'No stats yet';
+    return;
+  }
+  const relatedSessions = (sessions || []).filter(item => item.agent_id === agent.agent_id || item.agent_id === 'agent-main').slice(0, 4);
+  const statsRoot = clearRoot('agents-page-stats');
+  if (statsRoot) {
+    [
+      ['Agent', agent.agent_id],
+      ['Status', agent.status || 'unknown'],
+      ['Role', agent.role || 'worker'],
+      ['Last Seen', agent.last_seen_at || 'n/a'],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      statsRoot.appendChild(block);
+    });
+  }
+  setText('agents-page-detail', JSON.stringify(agent, null, 2));
+  renderListInto('agents-page-sessions', relatedSessions, item => card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Open Session', async () => {
+    activeSessionId = item.session_id;
+    await loadSessionDetail(item.session_id);
+    await loadChatTranscript(item.session_id);
+    openChatStream(item.session_id);
+  })]), 'No sessions for this agent.');
 }
 
 async function loadSessionDetail(sessionId) {
@@ -283,12 +370,31 @@ async function loadSessionDetail(sessionId) {
 }
 
 function renderSessions(items) {
+  renderSessionsPremium(items);
+}
+
+function renderSessionsPremium(items) {
+  const statsRoot = clearRoot('sessions-stats');
+  if (statsRoot) {
+    [
+      ['Sessions', String(items.length)],
+      ['Active', String(items.filter(item => item.status === 'active').length)],
+      ['Platforms', String(new Set(items.map(item => item.platform || item.source || 'unknown')).size)],
+      ['Models', String(new Set(items.map(item => item.model || 'unknown')).size)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      statsRoot.appendChild(block);
+    });
+  }
   renderListInto('sessions-list', items, item => card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Inspect', async () => {
     activeSessionId = item.session_id;
     await loadSessionDetail(item.session_id);
     await loadChatTranscript(item.session_id);
     openChatStream(item.session_id);
   })]));
+  renderListInto('sessions-related-transcript', [], () => null, 'Inspect a session to load transcript preview.');
 }
 
 function renderProcessesPage(items) {
@@ -306,6 +412,20 @@ function renderProcesses(items) {
 }
 
 function renderCronPage(jobs, historyItems) {
+  const summaryRoot = clearRoot('cron-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Cron Jobs', String(jobs.length)],
+      ['Enabled', String(jobs.filter(item => item.enabled).length)],
+      ['Run Requested', String(jobs.filter(item => item.status === 'run_requested').length)],
+      ['History Items', String(historyItems.length)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
   renderListInto('cron-page-list', jobs, job => card(`${job.name} · ${job.status}`, `${job.schedule || 'manual'} · next ${job.next_run_at || 'n/a'}`, [
     actionButton('Inspect History', async () => {
       const payload = await fetchJson(`/ops/cron/history?job_id=${encodeURIComponent(job.job_id)}`);
@@ -423,6 +543,7 @@ function renderUsagePage(payload) {
   const agentBreakdown = payload.agent_breakdown || [];
   const performance = payload.performance || {};
   const loadSmoke = payload.load_smoke || {};
+  const summaryCards = payload.summary_cards || [];
   renderListInto('usage-list', [
     ['Total Tokens', String(totals.total_tokens || 0)],
     ['Actual Cost USD', String(totals.actual_cost_usd || 0)],
@@ -432,6 +553,24 @@ function renderUsagePage(payload) {
     ['Load Smoke Failures', String(loadSmoke.failures || 0)],
   ], ([label, value]) => card(label, value));
   renderListInto('usage-agent-breakdown', agentBreakdown, item => card(`${item.agent_id} · ${item.session_count} session(s)`, `${item.total_tokens} tokens · $${item.actual_cost_usd || 0}`, [actionButton('Inspect Agent', () => setText('usage-detail', JSON.stringify({ agent: item, top_sessions: topSessions }, null, 2)))]), 'No agent usage yet');
+  renderListInto('usage-top-sessions', topSessions, item => card(`${item.session_id} · ${item.title || 'Untitled'}`, `${item.total_tokens || (Number(item.input_tokens || 0) + Number(item.output_tokens || 0) + Number(item.reasoning_tokens || 0))} tokens · $${item.actual_cost_usd || 0}`, [actionButton('Inspect Session', () => setText('usage-detail', JSON.stringify(item, null, 2)))]), 'No sessions yet');
+  const statGrid = clearRoot('usage-stat-grid');
+  if (statGrid) {
+    if (!summaryCards.length) {
+      statGrid.textContent = 'No summary cards yet';
+    } else {
+      summaryCards.forEach(cardItem => {
+        const block = document.createElement('div');
+        block.className = `usage-stat-card ${(cardItem.tone || 'neutral')}`;
+        block.innerHTML = `<div class="usage-stat-label">${cardItem.label}</div><div class="usage-stat-value">${cardItem.value}</div>`;
+        statGrid.appendChild(block);
+      });
+    }
+  }
+  const perf = document.getElementById('usage-performance-summary');
+  if (perf) {
+    perf.textContent = `Performance routes ${performance.snapshot?.route_count || 0} · retained window ${performance.budgets?.max_default_list_window || 0} · load smoke failures ${loadSmoke.failures || 0}`;
+  }
   setText('usage-summary', `${totals.total_tokens || 0} tokens · $${totals.actual_cost_usd || 0} actual · breaker ${breaker.tripped ? 'tripped' : 'healthy'}`);
   setText('usage-detail', JSON.stringify({ totals, circuit_breaker: breaker, performance, load_smoke: loadSmoke, top_sessions: topSessions }, null, 2));
   const costInput = document.getElementById('usage-max-cost');
@@ -475,6 +614,23 @@ function renderChannelsPage(payload) {
   setText('channels-page-detail', JSON.stringify(items.length ? { gateway: payload.gateway, channel: items[0] } : payload.gateway || {}, null, 2));
 }
 
+function renderDoctorPremium(health, securityAudit, performance, loadSmoke) {
+  const summaryRoot = clearRoot('doctor-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Health', health.data?.overall_status || 'unknown'],
+      ['Security', securityAudit.data?.overall_status || 'unknown'],
+      ['Routes', String(performance.data?.snapshot?.route_count || 0)],
+      ['Load Smoke', String(loadSmoke.data?.failures || 0)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
+}
+
 function renderDoctorPage({ health, securityAudit, performance, loadSmoke }) {
   const items = [
     ['Health', health.data?.overall_status || 'unknown'],
@@ -482,8 +638,14 @@ function renderDoctorPage({ health, securityAudit, performance, loadSmoke }) {
     ['Performance Routes', String(performance.data?.snapshot?.route_count || 0)],
     ['Load Smoke Failures', String(loadSmoke.data?.failures || 0)],
   ];
+  renderDoctorPremium(health, securityAudit, performance, loadSmoke);
   renderListInto('doctor-list', items, ([label, value]) => card(label, value));
   setText('doctor-detail', JSON.stringify({ health: health.data, securityAudit: securityAudit.data, performance: performance.data, loadSmoke: loadSmoke.data }, null, 2));
+}
+
+function renderLogsPremium(items) {
+  renderListInto('logs-list', items, item => card(item.kind || 'event', `${item.at || 'n/a'} ← ${item.source || 'unknown'}`, [actionButton('Inspect Log', () => setText('logs-detail', JSON.stringify(item, null, 2)))]), 'No logs/events yet');
+  setText('logs-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No log selected.');
 }
 
 function renderTailscalePage(systemInfo, gatewayPayload) {
@@ -527,6 +689,7 @@ async function fetchOverview() {
   setText('count-cron', String(overview.data.counts.cron_jobs));
 
   renderApprovals(approvals.data.items || []);
+  renderDashboardPremium(overview.data || {}, cronJobs.data || {});
   renderEvents(overview.data.events || []);
   renderSystemHealth(systemInfo.data, health.data);
   renderAgentsPage(overview.data.agents || [], overview.data.sessions || [], overview.data.processes || []);
@@ -560,6 +723,7 @@ async function fetchOverview() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  restoreShellPreferences();
   renderCurrentPage();
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('global-search').addEventListener('input', event => filterSidebar(event.target.value));
@@ -567,6 +731,29 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('activity-load-more').addEventListener('click', () => {
     activityPageLimit += 20;
     loadActivityPage().catch(error => setText('activity-window-summary', error.message));
+  });
+  document.getElementById('activity-filter-all')?.addEventListener('click', () => {
+    activityKindPrefix = '';
+    loadActivityPage().catch(error => setText('activity-window-summary', error.message));
+  });
+  document.getElementById('activity-filter-approvals')?.addEventListener('click', () => {
+    activityKindPrefix = 'approval';
+    loadActivityPage().catch(error => setText('activity-window-summary', error.message));
+  });
+  document.getElementById('activity-filter-process')?.addEventListener('click', () => {
+    activityKindPrefix = 'process';
+    loadActivityPage().catch(error => setText('activity-window-summary', error.message));
+  });
+  document.getElementById('cron-refresh-button')?.addEventListener('click', () => fetchOverview().catch(error => setText('cron-output-inspection', error.message)));
+  document.getElementById('logs-filter-all')?.addEventListener('click', () => {
+    renderLogsPremium([]);
+    fetchOverview().catch(error => setText('logs-detail', error.message));
+  });
+  document.getElementById('logs-filter-approval')?.addEventListener('click', () => {
+    fetchJson('/ops/activity?limit=20&kind_prefix=approval').then(payload => renderLogsPremium(payload.data.items || [])).catch(error => setText('logs-detail', error.message));
+  });
+  document.getElementById('logs-filter-process')?.addEventListener('click', () => {
+    fetchJson('/ops/activity?limit=20&kind_prefix=process').then(payload => renderLogsPremium(payload.data.items || [])).catch(error => setText('logs-detail', error.message));
   });
   document.getElementById('design-advisor-run')?.addEventListener('click', () => requestDesignAdvisorRecommendation().catch(error => setText('design-advisor-result', error.message)));
   document.getElementById('usage-breaker-form')?.addEventListener('submit', event => {
