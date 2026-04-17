@@ -110,8 +110,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 - M1-10 WebAuthn/passkey optional second factor: NOT STARTED
 
-- M1-11 Append-only operator audit log: NOT STARTED
-  - event feed exists, but this is not the same thing as an append-only audit log
+- M1-11 Append-only operator audit log: DONE
+  - SQLite-backed append-only audit log implemented in `backend/audit_log.py`
+  - destructive operator actions now append immutable records and expose them via `GET /ops/audit`
+  - tests cover append/read behavior and SQLite-level tamper resistance triggers
 
 - M1-12 Unified multiplexed SSE event bus: NOT STARTED
   - current implementation uses HTTP read surfaces and persisted events, not unified SSE

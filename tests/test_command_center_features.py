@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
+import sqlite3
+import sys
 import threading
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-import sys
+
+import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = PROJECT_ROOT / 'backend'
@@ -14,9 +18,6 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app import build_app  # noqa: E402
-import json as _json
-import sqlite3
-from pathlib import Path as _Path
 
 
 def _start_test_server():
@@ -56,7 +57,7 @@ def _login(server):
     return cookie, csrf_token
 
 
-def _write_runtime_fixture(base: _Path) -> None:
+def _write_runtime_fixture(base: Path) -> None:
     (base / 'sessions').mkdir(parents=True, exist_ok=True)
     (base / 'cron').mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(base / 'state.db')
@@ -69,7 +70,7 @@ def _write_runtime_fixture(base: _Path) -> None:
     )
     db.commit()
     db.close()
-    (base / 'sessions' / 'sessions.json').write_text(_json.dumps({
+    (base / 'sessions' / 'sessions.json').write_text(json.dumps({
         'agent:main:telegram:dm:416112154': {
             'session_key': 'agent:main:telegram:dm:416112154',
             'session_id': 'sess-live-1',
@@ -79,7 +80,7 @@ def _write_runtime_fixture(base: _Path) -> None:
             'chat_type': 'dm',
         }
     }), encoding='utf-8')
-    (base / 'processes.json').write_text(_json.dumps([
+    (base / 'processes.json').write_text(json.dumps([
         {
             'session_id': 'proc-live-1',
             'command': 'python worker.py',
@@ -92,7 +93,7 @@ def _write_runtime_fixture(base: _Path) -> None:
             'watch_patterns': [],
         }
     ]), encoding='utf-8')
-    (base / 'cron' / 'jobs.json').write_text(_json.dumps({
+    (base / 'cron' / 'jobs.json').write_text(json.dumps({
         'jobs': [
             {
                 'id': 'cron-live-1',
@@ -289,7 +290,7 @@ def test_cron_control_pause_updates_jobs_file_and_event_feed(tmp_path, monkeypat
     server, thread = _start_test_server()
     try:
         pause_status, _, pause_payload = _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
-        jobs = _json.loads((runtime_home / 'cron' / 'jobs.json').read_text(encoding='utf-8'))
+        jobs = json.loads((runtime_home / 'cron' / 'jobs.json').read_text(encoding='utf-8'))
         events_status, _, events_payload = _request(server, '/ops/events')
     finally:
         server.shutdown()
@@ -329,6 +330,65 @@ def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch
 
     assert status == 200
     assert any(item['kind'] == 'process.kill_requested' for item in payload['data']['items'])
+
+
+def test_operator_actions_are_appended_to_audit_log_and_exposed_via_ops_audit(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        kill_status, _, kill_payload = _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+        cron_status, _, cron_payload = _request(server, '/ops/cron/control', method='POST', json_body={'job_id': 'cron-live-1', 'action': 'pause'})
+        audit_status, _, audit_payload = _request(server, '/ops/audit?limit=5')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert kill_status == 200
+    assert cron_status == 200
+    assert kill_payload['data']['audit_entry']['action']['type'] == 'process.kill'
+    assert cron_payload['data']['audit_entry']['action']['type'] == 'cron.pause'
+    assert audit_status == 200
+    assert audit_payload['data']['count'] == 2
+    assert [item['action']['type'] for item in audit_payload['data']['items']] == ['cron.pause', 'process.kill']
+    assert audit_payload['data']['items'][0]['actor']['auth_mode'] == 'local-trusted'
+    assert audit_payload['data']['items'][0]['action']['target_type'] == 'cron_job'
+
+
+def test_audit_log_is_append_only_at_sqlite_layer(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    data_dir = tmp_path / 'command-center-data'
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(data_dir))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        kill_status, _, kill_payload = _request(server, '/ops/processes/kill', method='POST', json_body={'process_id': 'proc-live-1'})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert kill_status == 200
+    db_path = data_dir / 'audit-log.sqlite3'
+    assert db_path.exists()
+
+    with sqlite3.connect(db_path) as conn:
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute("UPDATE operator_audit_log SET result = 'mutated' WHERE entry_id = 1")
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute('DELETE FROM operator_audit_log WHERE entry_id = 1')
+        row = conn.execute('SELECT COUNT(*) FROM operator_audit_log').fetchone()
+
+    assert row[0] == 1
+    assert kill_payload['data']['audit_entry']['action']['result'] == 'termination_requested'
 
 
 def test_runtime_event_ingest_updates_derived_state_and_feed():

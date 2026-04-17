@@ -8,28 +8,7 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-11 — Implement append-only operator audit log
-Status: OPEN
-Priority: P1
-Why next:
-- official backlog gap
-- required before more destructive/operator actions accumulate
-- current persisted event feed is not an append-only audit log
-
-Scope:
-- create append-only audit log storage model
-- log destructive/sensitive operator actions with timestamp, actor, action type, exact target, result
-- ensure entries are immutable once written
-- expose a minimal read surface for inspection
-- test write/read behavior and tamper-resistance assumptions
-
-Suggested deliverables:
-- `backend/audit_log.py`
-- audit log persistence under `.data/` or SQLite-backed local store
-- route(s) under `/ops/audit` or equivalent
-- tests covering append-only semantics
-
-### 2. M1-12 — Implement unified multiplexed SSE event bus
+### 1. M1-12 — Implement unified multiplexed SSE event bus
 Status: OPEN
 Priority: P1
 Why next:
@@ -49,7 +28,7 @@ Suggested deliverables:
 - SSE contract doc update
 - tests for initial connect, heartbeat, and event replay/reconnect behavior
 
-### 3. M1-09 — Implement secret storage strategy
+### 2. M1-09 — Implement secret storage strategy
 Status: OPEN
 Priority: P1
 Why next:
@@ -68,7 +47,7 @@ Suggested deliverables:
 - tests for redaction and storage behavior
 - doc update in security/setup docs
 
-### 4. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
+### 3. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
 Status: OPEN (DECISION REQUIRED)
 Priority: P1
 Why next:
