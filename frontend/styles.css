@@ -54,6 +54,11 @@ article, .hero-card {
 h1, h2, p {
   margin-top: 0;
 }
+.panel-caption {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+}
 .hero-card, .panel-header {
   display: flex;
   flex-direction: column;

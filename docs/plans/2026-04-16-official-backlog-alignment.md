@@ -153,7 +153,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - approval lifecycle persists locally and emits `approval.created` / `approval.resolved` events
   - contract and persistence are documented in `docs/architecture/approvals-backend.md`
 
-- M2-06 Approvals page and global pending-approvals tray: NOT STARTED
+- M2-06 Approvals page and global pending-approvals tray: DONE
+  - approvals panel is integrated into the dashboard frontend and resolves queued items through `frontend/app.js`
+  - pending approvals summary and quick-decision controls are shipped in the current minimal frontend
+  - UI scope is documented in `docs/architecture/approvals-ui.md`
 
 - M2-07 Sessions/chat UI with streaming and transcript handling: NOT STARTED
 

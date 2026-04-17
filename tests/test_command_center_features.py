@@ -174,6 +174,8 @@ def test_frontend_shell_is_served_from_root():
     assert 'default-src' in headers['Content-Security-Policy']
     assert 'Hermes Command Center' in body
     assert '/static/app.js' in body
+    assert 'Approvals' in body
+    assert 'approvals-list' in body
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -188,6 +190,8 @@ def test_frontend_javascript_bundle_is_served():
     assert status == 200
     assert 'javascript' in headers['Content-Type']
     assert 'fetchOverview' in body
+    assert 'renderApprovals' in body
+    assert '/ops/approvals' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

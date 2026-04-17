@@ -58,6 +58,14 @@ async function handleCronAction(jobId, action) {
   await fetchOverview();
 }
 
+async function handleApprovalDecision(itemId, decision) {
+  await fetchJson('/ops/approvals/resolve', {
+    method: 'POST',
+    body: JSON.stringify({ item_id: itemId, decision }),
+  });
+  await fetchOverview();
+}
+
 function renderSessions(items) {
   const root = clearRoot('sessions-list');
   if (!items.length) {
@@ -141,6 +149,44 @@ function renderEvents(items) {
   }
 }
 
+function renderApprovals(items) {
+  const root = clearRoot('approvals-list');
+  const pendingCount = items.filter(item => item.status === 'pending').length;
+  setText('approvals-summary', pendingCount ? `${pendingCount} pending item(s)` : 'No pending approvals.');
+  if (!items.length) {
+    renderEmpty(root, 'No approvals yet');
+    return;
+  }
+  for (const item of items) {
+    const li = document.createElement('li');
+    li.className = 'item-card';
+    const title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = `${item.title} · ${item.status}`;
+    const meta = document.createElement('div');
+    meta.className = 'item-meta';
+    meta.textContent = `${item.kind} · ${item.source}`;
+    const summary = document.createElement('div');
+    summary.className = 'item-meta';
+    summary.textContent = item.summary;
+    li.append(title, meta, summary);
+    if (item.status === 'pending' && Array.isArray(item.choices) && item.choices.length) {
+      const controls = document.createElement('div');
+      controls.className = 'actions-row';
+      for (const choice of item.choices) {
+        controls.append(actionButton(choice, () => handleApprovalDecision(item.id, choice)));
+      }
+      li.append(controls);
+    } else if (item.decision) {
+      const resolved = document.createElement('div');
+      resolved.className = 'item-meta';
+      resolved.textContent = `Decision: ${item.decision}`;
+      li.append(resolved);
+    }
+    root.appendChild(li);
+  }
+}
+
 async function fetchOverview() {
   const session = await fetchJson('/auth/session');
   setText('auth-status', session.data.authenticated
@@ -148,6 +194,7 @@ async function fetchOverview() {
     : 'Not authenticated');
 
   const overview = await fetchJson('/ops/overview');
+  const approvals = await fetchJson('/ops/approvals');
   setText('generated-at', `Snapshot: ${overview.data.generated_at}`);
   setText('count-agents', String(overview.data.counts.agents));
   setText('count-sessions', String(overview.data.counts.sessions));
@@ -158,6 +205,7 @@ async function fetchOverview() {
   renderProcesses(overview.data.processes || []);
   renderCron(overview.data.cron_jobs || []);
   renderEvents(overview.data.events || []);
+  renderApprovals(approvals.data.items || []);
 
   if ((overview.data.sessions || []).length) {
     await loadSessionDetail(overview.data.sessions[0].session_id);
