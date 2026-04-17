@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M2 is now complete. Continue in the official M3 order:
 
-1. M5-01 — final security audit and regression gate
-2. M5-02 — performance budget validation/optimization
-3. M5-03 — backup/export/restore for Command Center state
+1. Backlog M0–M5 is now complete; next work should come from a new official backlog or post-1.0 priorities.
+2. Re-run full regression and smoke checks before any deployment changes.
+3. Consider switching branch-protected flow to actual PRs instead of admin bypass pushes.
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

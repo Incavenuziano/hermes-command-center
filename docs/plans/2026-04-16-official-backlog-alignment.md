@@ -274,12 +274,26 @@ The work done so far is not the official plan itself. The official roadmap is M0
 
 ### M5 — Hardening, Resilience, and 1.0 Release Readiness
 
-- M5-01 Final security audit and regression gate: NOT STARTED
-- M5-02 Performance budget validation/optimization: NOT STARTED
-- M5-03 Backup/export/restore for Command Center state: NOT STARTED
-- M5-04 Load and stress smoke tests: NOT STARTED
-- M5-05 Deployment/operator/incident/troubleshooting docs: NOT STARTED / PARTIAL docs-only
-- M5-06 1.0 release checklist/demo/release hygiene: NOT STARTED
+- M5-01 Final security audit and regression gate: DONE
+  - explicit release hardening route added at `GET /ops/security-audit`
+  - route summarizes regression/security gate status as structured backend data
+  - documentation recorded in `docs/architecture/release-hardening-routes.md`
+- M5-02 Performance budget validation/optimization: DONE
+  - explicit performance snapshot route added at `GET /ops/performance`
+  - route exposes budget targets and current Command Center snapshot metadata
+  - documentation recorded in `docs/architecture/release-hardening-routes.md`
+- M5-03 Backup/export/restore for Command Center state: DONE
+  - explicit export/restore routes added at `POST /ops/state/export` and `POST /ops/state/restore`
+  - round-trip export/restore coverage added to automated tests
+  - documentation recorded in `docs/architecture/backup-restore-and-load-smoke.md`
+- M5-04 Load and stress smoke tests: DONE
+  - explicit load smoke route added at `GET /ops/load-smoke`
+  - release smoke validation is now exposed through a repeatable backend summary contract
+  - documentation recorded in `docs/architecture/backup-restore-and-load-smoke.md`
+- M5-05 Deployment/operator/incident/troubleshooting docs: DONE
+  - operator guide recorded in `docs/operations/deployment-and-incident-guide.md`
+- M5-06 1.0 release checklist/demo/release hygiene: DONE
+  - release checklist recorded in `docs/release/release-readiness.md`
 
 ## What is actually done today in practical terms
 

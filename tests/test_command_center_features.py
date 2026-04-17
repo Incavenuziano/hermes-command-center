@@ -876,6 +876,82 @@ def test_gateway_backend_exposes_redacted_channel_status(tmp_path, monkeypatch):
     assert payload['data']['channels'][0]['secret_redacted'].startswith('***')
 
 
+def test_security_audit_gate_exposes_overall_regression_status():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/security-audit')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['overall_status'] in {'pass', 'warn'}
+    assert payload['data']['checks']
+    assert payload['data']['checks'][0]['name']
+
+
+def test_performance_budget_route_exposes_targets_and_current_snapshot():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/performance')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['budgets']['max_frontend_requests_on_load'] >= 1
+    assert payload['data']['snapshot']['route_count'] >= 1
+
+
+def test_backup_export_and_restore_round_trip(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    export_dir = tmp_path / 'exports'
+    monkeypatch.setenv('HCC_EXPORT_DIR', str(export_dir))
+
+    server, thread = _start_test_server()
+    try:
+        export_status, _, export_payload = _request(server, '/ops/state/export', method='POST', json_body={})
+        restore_status, _, restore_payload = _request(server, '/ops/state/restore', method='POST', json_body={'export_path': export_payload['data']['export_path']})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert export_status == 200
+    assert export_payload['data']['file_count'] >= 1
+    assert Path(export_payload['data']['export_path']).exists()
+    assert restore_status == 200
+    assert restore_payload['data']['restored'] is True
+
+
+def test_load_smoke_route_exposes_repeatable_summary():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/ops/load-smoke')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['requests_executed'] >= 1
+    assert payload['data']['failures'] == 0
+
+
+def test_release_manifest_and_operator_docs_exist():
+    release_doc = PROJECT_ROOT / 'docs' / 'release' / 'release-readiness.md'
+    operator_doc = PROJECT_ROOT / 'docs' / 'operations' / 'deployment-and-incident-guide.md'
+
+    assert release_doc.exists()
+    assert operator_doc.exists()
+    assert 'Release Checklist' in release_doc.read_text(encoding='utf-8')
+    assert 'Incident Response' in operator_doc.read_text(encoding='utf-8')
+
+
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
     runtime_home = tmp_path / 'hermes-home'
     _write_runtime_fixture(runtime_home)
