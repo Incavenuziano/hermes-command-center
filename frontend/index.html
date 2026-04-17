@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,200 +7,279 @@
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
-    <main class="shell">
-      <header class="hero">
-        <div>
+    <main class="app-shell" id="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
           <p class="eyebrow">Hermes Command Center</p>
-          <h1>Operational Control Plane</h1>
-          <p class="lede">Real Hermes runtime state, durable event history, and minimal operator actions over local/Tailscale access.</p>
-          <nav class="nav-links">
-            <a href="/">Dashboard</a>
-            <a href="/agents">Agents Page</a>
-            <a href="/cron">Cron Page</a>
-            <a href="/activity">Activity Page</a>
-            <a href="/processes">Processes Page</a>
-            <a href="/terminal">Terminal Strategy</a>
-            <a href="/memory">Memory Page</a>
-            <a href="/skills">Skills Page</a>
-            <a href="/files">Files Page</a>
-            <a href="/profiles">Profiles Page</a>
-            <a href="/channels">Channels Page</a>
-          </nav>
+          <strong>Control Plane</strong>
         </div>
-        <div class="hero-card">
-          <div id="auth-status">Checking session…</div>
-          <div id="generated-at"></div>
-          <button id="refresh-button" type="button">Refresh</button>
-        </div>
-      </header>
 
-      <section class="grid stats">
-        <article><h2>Agents</h2><p id="count-agents">—</p></article>
-        <article><h2>Sessions</h2><p id="count-sessions">—</p></article>
-        <article><h2>Processes</h2><p id="count-processes">—</p></article>
-        <article><h2>Cron Jobs</h2><p id="count-cron">—</p></article>
-      </section>
+        <nav class="sidebar-nav">
+          <section class="nav-sector">
+            <h2>Visão Geral</h2>
+            <a href="/" data-nav-item="dashboard">Dashboard</a>
+            <a href="/activity" data-nav-item="activity">Atividade</a>
+            <a href="/usage" data-nav-item="usage">Usage</a>
+          </section>
 
-      <section class="grid panels panels-three">
-        <article>
-          <div class="panel-header"><h2>Sessions</h2></div>
-          <ul id="sessions-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Processes</h2></div>
-          <ul id="processes-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Cron Jobs</h2></div>
-          <ul id="cron-list" class="item-list"></ul>
-        </article>
-      </section>
+          <section class="nav-sector">
+            <h2>Agentes</h2>
+            <a href="/agents" data-nav-item="agents">Agentes</a>
+            <a href="/chat" data-nav-item="chat">Conversar</a>
+            <a href="/sessions" data-nav-item="sessions">Sessões</a>
+          </section>
 
-      <section class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Approvals</h2><p id="approvals-summary" class="panel-caption">No pending approvals.</p></div>
-          <ul id="approvals-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Recent Events</h2></div>
-          <ul id="events-list" class="item-list"></ul>
-        </article>
-      </section>
+          <section class="nav-sector">
+            <h2>Trabalhos</h2>
+            <a href="/tasks" data-nav-item="tasks">Tarefas</a>
+            <a href="/cron" data-nav-item="cron">Crons</a>
+            <a href="/calendar" data-nav-item="calendar">Calendario</a>
+            <a href="/integrations" data-nav-item="integrations">Integrações</a>
+            <a href="/skill" data-nav-item="skill">Skill</a>
+          </section>
 
-      <section class="grid panels">
-        <article>
-          <div class="panel-header"><h2>System Health</h2><p id="system-summary" class="panel-caption">Loading system status…</p></div>
-          <ul id="system-health" class="item-list"></ul>
-        </article>
-      </section>
+          <section class="nav-sector">
+            <h2>Conhecimento</h2>
+            <a href="/memory" data-nav-item="memory">Memoria</a>
+            <a href="/documents" data-nav-item="documents">Documentos</a>
+            <a href="/database" data-nav-item="database">DataBase</a>
+            <a href="/apis" data-nav-item="apis">API's</a>
+            <a href="/channels" data-nav-item="channels">Canais</a>
+            <a href="/hooks" data-nav-item="hooks">Segurança Hooks</a>
+            <a href="/preferences" data-nav-item="preferences">Preferencias</a>
+          </section>
 
-      <section id="agents-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
-          <ul id="agents-page-list" class="item-list"></ul>
-        </article>
-      </section>
+          <section class="nav-sector">
+            <h2>Sistema</h2>
+            <a href="/doctor" data-nav-item="doctor">Doctor</a>
+            <a href="/terminal" data-nav-item="terminal">Terminal</a>
+            <a href="/logs" data-nav-item="logs">Logs</a>
+            <a href="/tailscale" data-nav-item="tailscale">Tailscale</a>
+            <a href="/config" data-nav-item="config">Config</a>
+          </section>
+        </nav>
+      </aside>
 
-      <section id="cron-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Cron Page</h2><p class="panel-caption">Run history, output inspection, and guarded actions.</p></div>
-          <ul id="cron-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Cron Run History</h2></div>
-          <ul id="cron-run-history" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Cron Output Inspection</h2></div>
-          <pre id="cron-output-inspection">Select a cron job to inspect its latest output/history.</pre>
-        </article>
-      </section>
-
-      <section id="activity-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Activity Page</h2><p id="activity-window-summary" class="panel-caption">Loading activity timeline…</p></div>
-          <ul id="activity-page-list" class="item-list"></ul>
-          <div class="actions-row">
-            <button id="activity-load-more" type="button">Load More Activity</button>
+      <div class="main-column">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button id="sidebar-toggle" type="button" class="icon-button">☰</button>
+            <div>
+              <p class="eyebrow">Hermes</p>
+              <h1 id="page-heading">Dashboard</h1>
+            </div>
           </div>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Activity Drill-Down</h2><p class="panel-caption">Select an activity item to inspect its event payload.</p></div>
-          <pre id="activity-drilldown">Select an activity item to inspect details.</pre>
-        </article>
-      </section>
-
-      <section id="processes-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Processes Page</h2><p id="processes-page-summary" class="panel-caption">Loading process registry…</p></div>
-          <ul id="processes-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Process Detail</h2><p class="panel-caption">Select a process to inspect its registry payload.</p></div>
-          <pre id="processes-page-detail">Select a process to inspect details.</pre>
-        </article>
-      </section>
-
-      <section id="terminal-policy-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Terminal Strategy</h2><p id="terminal-policy-summary" class="panel-caption">Loading terminal risk posture…</p></div>
-          <ul id="terminal-policy-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Terminal Policy Detail</h2><p class="panel-caption">Current explicit risk posture for terminal-related operator access.</p></div>
-          <pre id="terminal-policy-detail">Loading terminal policy details.</pre>
-        </article>
-      </section>
-
-      <section id="memory-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Memory Page</h2><p id="memory-page-summary" class="panel-caption">Loading memory summaries…</p></div>
-          <ul id="memory-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Memory Detail</h2></div>
-          <pre id="memory-page-detail">Loading memory details.</pre>
-        </article>
-      </section>
-
-      <section id="skills-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Skills Page</h2><p id="skills-page-summary" class="panel-caption">Loading skills metadata…</p></div>
-          <ul id="skills-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Skill Detail</h2></div>
-          <pre id="skills-page-detail">Loading skill details.</pre>
-        </article>
-      </section>
-
-      <section id="files-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Files Page</h2><p id="files-page-summary" class="panel-caption">Loading workspace files…</p></div>
-          <ul id="files-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>File Detail</h2></div>
-          <pre id="files-page-detail">Loading file details.</pre>
-        </article>
-      </section>
-
-      <section id="profiles-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Profiles Page</h2><p id="profiles-page-summary" class="panel-caption">Loading profile rules…</p></div>
-          <ul id="profiles-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Profile Detail</h2></div>
-          <pre id="profiles-page-detail">Loading profile details.</pre>
-        </article>
-      </section>
-
-      <section id="channels-page-section" class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Channels Page</h2><p id="channels-page-summary" class="panel-caption">Loading gateway and channel status…</p></div>
-          <ul id="channels-page-list" class="item-list"></ul>
-        </article>
-        <article>
-          <div class="panel-header"><h2>Channel Detail</h2></div>
-          <pre id="channels-page-detail">Loading channel details.</pre>
-        </article>
-      </section>
-
-      <section class="grid panels">
-        <article>
-          <div class="panel-header"><h2>Session Detail</h2></div>
-          <pre id="session-detail">Select a session to inspect details.</pre>
-        </article>
-        <article>
-          <div class="panel-header">
-            <h2>Chat Transcript</h2>
-            <p id="chat-stream-status" class="panel-caption">No session selected.</p>
+          <div class="topbar-right">
+            <input id="global-search" type="search" placeholder="Procurar" aria-label="Procurar no menu">
+            <span id="gateway-runtime-status" class="status-pill offline">offline</span>
+            <button id="gateway-runtime-button" type="button" class="action-button danger">Kill Hermes</button>
+            <button id="refresh-button" type="button" class="action-button">Refresh</button>
           </div>
-          <div id="chat-session-summary" class="item-meta">Select a session to load transcript.</div>
-          <ul id="chat-transcript" class="item-list"></ul>
-        </article>
-      </section>
+        </header>
+
+        <section id="dashboard-section" class="page-section grid stats" data-page="dashboard">
+          <article><h2>Agents</h2><p id="count-agents">—</p></article>
+          <article><h2>Sessions</h2><p id="count-sessions">—</p></article>
+          <article><h2>Processes</h2><p id="count-processes">—</p></article>
+          <article><h2>Cron Jobs</h2><p id="count-cron">—</p></article>
+        </section>
+
+        <section id="dashboard-overview-section" class="page-section grid panels panels-three" data-page="dashboard">
+          <article>
+            <div class="panel-header"><h2>Approvals</h2><p id="approvals-summary" class="panel-caption">No pending approvals.</p></div>
+            <ul id="approvals-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Recent Events</h2></div>
+            <ul id="events-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>System Health</h2><p id="system-summary" class="panel-caption">Loading system status…</p></div>
+            <ul id="system-health" class="item-list"></ul>
+          </article>
+        </section>
+
+        <section id="activity-page-section" class="page-section grid panels" data-page="activity">
+          <article>
+            <div class="panel-header"><h2>Activity Page</h2><p id="activity-window-summary" class="panel-caption">Loading activity timeline…</p></div>
+            <ul id="activity-page-list" class="item-list"></ul>
+            <div class="actions-row"><button id="activity-load-more" type="button" class="action-button">Load More Activity</button></div>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Activity Drill-Down</h2></div>
+            <pre id="activity-drilldown">Select an activity item to inspect details.</pre>
+          </article>
+        </section>
+
+        <section id="usage-page-section" class="page-section grid panels" data-page="usage">
+          <article>
+            <div class="panel-header"><h2>Usage</h2><p id="usage-summary" class="panel-caption">Usage and performance snapshot.</p></div>
+            <ul id="usage-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Usage Detail</h2></div>
+            <pre id="usage-detail">Loading usage details.</pre>
+          </article>
+        </section>
+
+        <section id="agents-page-section" class="page-section grid panels" data-page="agents">
+          <article>
+            <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
+            <ul id="agents-page-list" class="item-list"></ul>
+          </article>
+        </section>
+
+        <section id="chat-page-section" class="page-section grid panels" data-page="chat">
+          <article>
+            <div class="panel-header"><h2>Conversar</h2><p class="panel-caption">Transcript e stream da sessão ativa.</p></div>
+            <div id="chat-session-summary" class="item-meta">Select a session to load transcript.</div>
+            <ul id="chat-transcript" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Chat Status</h2></div>
+            <pre id="chat-stream-status">No session selected.</pre>
+          </article>
+        </section>
+
+        <section id="sessions-page-section" class="page-section grid panels" data-page="sessions">
+          <article>
+            <div class="panel-header"><h2>Sessões</h2></div>
+            <ul id="sessions-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Session Detail</h2></div>
+            <pre id="session-detail">Select a session to inspect details.</pre>
+          </article>
+        </section>
+
+        <section id="processes-page-section" class="page-section grid panels" data-page="processes">
+          <article>
+            <div class="panel-header"><h2>Processes Page</h2><p id="processes-page-summary" class="panel-caption">Loading process registry…</p></div>
+            <ul id="processes-page-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Process Detail</h2></div>
+            <pre id="processes-page-detail">Select a process to inspect details.</pre>
+          </article>
+        </section>
+
+        <section id="tasks-page-section" class="page-section grid panels" data-page="tasks">
+          <article>
+            <div class="panel-header"><h2>Tarefas</h2><p class="panel-caption">Placeholder para backlog operacional.</p></div>
+            <div class="placeholder-card">Página ainda não populada.</div>
+          </article>
+        </section>
+
+        <section id="cron-page-section" class="page-section grid panels" data-page="cron">
+          <article>
+            <div class="panel-header"><h2>Cron Page</h2><p class="panel-caption">Run history, output inspection, and guarded actions.</p></div>
+            <ul id="cron-page-list" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Cron Run History</h2></div>
+            <ul id="cron-run-history" class="item-list"></ul>
+          </article>
+          <article>
+            <div class="panel-header"><h2>Cron Output Inspection</h2></div>
+            <pre id="cron-output-inspection">Select a cron job to inspect its latest output/history.</pre>
+          </article>
+        </section>
+
+        <section id="calendar-page-section" class="page-section grid panels" data-page="calendar">
+          <article><div class="panel-header"><h2>Calendario</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+
+        <section id="integrations-page-section" class="page-section grid panels" data-page="integrations">
+          <article><div class="panel-header"><h2>Integrações</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+
+        <section id="skill-page-section" class="page-section grid panels" data-page="skill">
+          <article>
+            <div class="panel-header"><h2>Skills Page</h2><p id="skills-page-summary" class="panel-caption">Loading skills metadata…</p></div>
+            <ul id="skills-page-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Skill Detail</h2></div><pre id="skills-page-detail">Loading skill details.</pre></article>
+        </section>
+
+        <section id="memory-page-section" class="page-section grid panels" data-page="memory">
+          <article>
+            <div class="panel-header"><h2>Memory Page</h2><p id="memory-page-summary" class="panel-caption">Loading memory summaries…</p></div>
+            <ul id="memory-page-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Memory Detail</h2></div><pre id="memory-page-detail">Loading memory details.</pre></article>
+        </section>
+
+        <section id="documents-page-section" class="page-section grid panels" data-page="documents">
+          <article>
+            <div class="panel-header"><h2>Files Page</h2><p id="files-page-summary" class="panel-caption">Loading workspace files…</p></div>
+            <ul id="files-page-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>File Detail</h2></div><pre id="files-page-detail">Loading file details.</pre></article>
+        </section>
+
+        <section id="database-page-section" class="page-section grid panels" data-page="database">
+          <article><div class="panel-header"><h2>DataBase</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+
+        <section id="apis-page-section" class="page-section grid panels" data-page="apis">
+          <article><div class="panel-header"><h2>API's</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+
+        <section id="channels-page-section" class="page-section grid panels" data-page="channels">
+          <article>
+            <div class="panel-header"><h2>Channels Page</h2><p id="channels-page-summary" class="panel-caption">Loading gateway and channel status…</p></div>
+            <ul id="channels-page-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Channel Detail</h2></div><pre id="channels-page-detail">Loading channel details.</pre></article>
+        </section>
+
+        <section id="hooks-page-section" class="page-section grid panels" data-page="hooks">
+          <article><div class="panel-header"><h2>Segurança Hooks</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+
+        <section id="preferences-page-section" class="page-section grid panels" data-page="preferences">
+          <article>
+            <div class="panel-header"><h2>Profiles Page</h2><p id="profiles-page-summary" class="panel-caption">Loading profile rules…</p></div>
+            <ul id="profiles-page-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Profile Detail</h2></div><pre id="profiles-page-detail">Loading profile details.</pre></article>
+        </section>
+
+        <section id="doctor-page-section" class="page-section grid panels" data-page="doctor">
+          <article>
+            <div class="panel-header"><h2>Doctor</h2><p class="panel-caption">Operational diagnostics.</p></div>
+            <ul id="doctor-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Doctor Detail</h2></div><pre id="doctor-detail">Loading doctor data.</pre></article>
+        </section>
+
+        <section id="terminal-policy-section" class="page-section grid panels" data-page="terminal">
+          <article>
+            <div class="panel-header"><h2>Terminal Strategy</h2><p id="terminal-policy-summary" class="panel-caption">Loading terminal risk posture…</p></div>
+            <ul id="terminal-policy-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Terminal Policy Detail</h2></div><pre id="terminal-policy-detail">Loading terminal policy details.</pre></article>
+        </section>
+
+        <section id="logs-page-section" class="page-section grid panels" data-page="logs">
+          <article>
+            <div class="panel-header"><h2>Logs</h2></div>
+            <ul id="logs-list" class="item-list"></ul>
+          </article>
+        </section>
+
+        <section id="tailscale-page-section" class="page-section grid panels" data-page="tailscale">
+          <article>
+            <div class="panel-header"><h2>Tailscale</h2></div>
+            <ul id="tailscale-list" class="item-list"></ul>
+          </article>
+          <article><div class="panel-header"><h2>Tailscale Detail</h2></div><pre id="tailscale-detail">Loading tailscale details.</pre></article>
+        </section>
+
+        <section id="config-page-section" class="page-section grid panels" data-page="config">
+          <article><div class="panel-header"><h2>Config</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
+        </section>
+      </div>
     </main>
     <script src="/static/app.js"></script>
   </body>

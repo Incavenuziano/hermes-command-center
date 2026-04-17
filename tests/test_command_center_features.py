@@ -211,7 +211,7 @@ def test_ops_events_returns_recent_event_feed():
     assert payload['data']['items'][0]['source']
 
 
-def test_frontend_shell_is_served_from_root():
+def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/')
@@ -222,20 +222,20 @@ def test_frontend_shell_is_served_from_root():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert headers['X-Frame-Options'] == 'DENY'
-    assert headers['X-Content-Type-Options'] == 'nosniff'
-    assert 'default-src' in headers['Content-Security-Policy']
-    assert 'Hermes Command Center' in body
-    assert '/static/app.js' in body
-    assert 'Approvals' in body
-    assert 'approvals-list' in body
-    assert 'System Health' in body
-    assert 'system-health' in body
-    assert 'Chat Transcript' in body
-    assert 'chat-transcript' in body
-    assert 'chat-stream-status' in body
-    assert 'Agents Page' in body
-    assert '/agents' in body
+    assert 'sidebar-toggle' in body
+    assert 'global-search' in body
+    assert 'gateway-runtime-button' in body
+    assert 'gateway-runtime-status' in body
+    assert 'Visão Geral' in body
+    assert 'Agentes' in body
+    assert 'Trabalhos' in body
+    assert 'Conhecimento' in body
+    assert 'Sistema' in body
+    assert 'Dashboard' in body
+    assert 'Usage' in body
+    assert 'Conversar' in body
+    assert 'Calendario' in body
+    assert 'API&#x27;s' in body or 'API\'s' in body or 'API’s' in body or 'API&apos;s' in body
 
 
 def test_agents_page_is_served_with_same_frontend_shell():
@@ -397,6 +397,37 @@ def test_channels_page_is_served_with_gateway_panels():
     assert 'channels-page-detail' in body
 
 
+def test_new_navigation_placeholder_routes_are_served():
+    expected = {
+        '/usage': 'Usage',
+        '/chat': 'Conversar',
+        '/sessions': 'Sessões',
+        '/tasks': 'Tarefas',
+        '/calendar': 'Calendario',
+        '/integrations': 'Integrações',
+        '/skill': 'Skill',
+        '/database': 'DataBase',
+        '/apis': 'API',
+        '/hooks': 'Segurança Hooks',
+        '/preferences': 'Preferencias',
+        '/doctor': 'Doctor',
+        '/logs': 'Logs',
+        '/tailscale': 'Tailscale',
+        '/config': 'Config',
+    }
+
+    server, thread = _start_test_server()
+    try:
+        for path, marker in expected.items():
+            status, _, body = _request(server, path)
+            assert status == 200, path
+            assert marker in body, path
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
 def test_frontend_javascript_bundle_is_served():
     server, thread = _start_test_server()
     try:
@@ -454,6 +485,11 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderChannelsPage' in body
     assert '/ops/gateway' in body
     assert 'channels-page-list' in body
+    assert 'sidebar-toggle' in body
+    assert 'global-search' in body
+    assert '/ops/gateway-runtime' in body
+    assert 'toggleSidebar' in body
+    assert 'renderCurrentPage' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

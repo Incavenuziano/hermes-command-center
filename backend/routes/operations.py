@@ -4,6 +4,7 @@ from audit_log import audit_log_store
 from auth import auth_manager
 from cron_history import cron_history_store
 from derived_state import derived_state_store
+from gateway_runtime import gateway_runtime_store
 from http_api import AuthenticationRequiredError, RequestValidationError, route
 from read_only_mode import read_only_mode_store
 from runtime_adapter import runtime_adapter
@@ -153,6 +154,22 @@ def ops_terminal_policy(handler) -> None:
         'revisit_in_milestone': 'M4+',
         'rationale': 'Terminal access remains intentionally disabled until a narrower threat model, audit posture, and re-auth design are implemented.',
     })
+
+
+@route('GET', '/ops/gateway-runtime', allow=('GET',))
+def ops_gateway_runtime(handler) -> None:
+    _require_authenticated(handler)
+    handler.send_data(gateway_runtime_store.get_state())
+
+
+@route('POST', '/ops/gateway-runtime', allow=('POST',))
+def ops_gateway_runtime_update(handler) -> None:
+    _require_authenticated(handler)
+    payload = handler.read_json_body()
+    action = payload.get('action')
+    if action not in {'kill', 'start'}:
+        raise RequestValidationError(status=400, code='ops.invalid_action', message='Unsupported gateway action', details={'action': action})
+    handler.send_data(gateway_runtime_store.set_action(action))
 
 
 @route('GET', '/ops/cron/jobs', allow=('GET',))
