@@ -97,6 +97,8 @@ def test_system_info_endpoint_returns_service_identity():
     assert payload['data']['service'] == 'hermes-command-center'
     assert payload['data']['transport'] == 'http'
     assert payload['data']['auth_mode'] == 'local-trusted'
+    assert payload['data']['secret_storage']['auth_local_password']['present'] is True
+    assert payload['data']['secret_storage']['auth_local_password']['redacted'] != 'dev-password'
 
 
 def test_missing_route_returns_standard_error_envelope():

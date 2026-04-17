@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME, to_jsonable
+from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME, secret_backend_summary, to_jsonable
 from contracts.system import ComponentStatus, SystemComponent, SystemHealth, SystemIdentity
 from http_api import route
 
@@ -39,7 +39,9 @@ def system_info(handler) -> None:
         transport='http',
         auth_mode='local-password' if AUTH_ENABLED else 'local-trusted',
     )
-    handler.send_data(to_jsonable(identity))
+    payload = to_jsonable(identity)
+    payload['secret_storage'] = secret_backend_summary()
+    handler.send_data(payload)
 
 
 @route('POST', '/system/inspect', allow=('POST',))

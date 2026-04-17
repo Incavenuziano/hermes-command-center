@@ -7,6 +7,8 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
 
+from secrets_store import resolve_secret, secret_store
+
 BASE_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = BASE_DIR
 DATA_DIR = PROJECT_ROOT / '.data'
@@ -19,7 +21,7 @@ CONTRACT_VERSION = '2026-04-15'
 SERVICE_NAME = 'hermes-command-center'
 MAX_REQUEST_BYTES = int(os.getenv('HCC_MAX_REQUEST_BYTES', '4096'))
 AUTH_ENABLED = os.getenv('HCC_AUTH_ENABLED', '0').strip().lower() in {'1', 'true', 'yes', 'on'}
-AUTH_PASSWORD = os.getenv('HCC_AUTH_PASSWORD', 'dev-password')
+AUTH_PASSWORD = resolve_secret('auth.local_password', env_var='HCC_AUTH_PASSWORD', default='dev-password') or 'dev-password'
 AUTH_USER = os.getenv('HCC_AUTH_USER', 'local-operator')
 AUTH_SESSION_TTL_SECONDS = int(os.getenv('HCC_AUTH_SESSION_TTL_SECONDS', '3600'))
 
@@ -60,3 +62,10 @@ def to_jsonable(value: Any):
     if isinstance(value, (list, tuple)):
         return [to_jsonable(item) for item in value]
     return value
+
+
+def secret_backend_summary() -> dict[str, Any]:
+    auth_summary = secret_store.summary('auth.local_password', env_var='HCC_AUTH_PASSWORD', default='dev-password')
+    return {
+        'auth_local_password': auth_summary,
+    }

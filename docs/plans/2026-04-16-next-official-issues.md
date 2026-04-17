@@ -8,26 +8,7 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 
 ## Next issues to execute
 
-### 1. M1-09 — Implement secret storage strategy
-Status: OPEN
-Priority: P1
-Why next:
-- ADR exists but implementation is not shipped
-- official threat-model consequence
-- should precede broader config/profile surfaces
-
-Scope:
-- choose concrete local secret storage mechanism matching ADR
-- prevent sensitive values from leaking into logs/responses/plaintext state
-- add bootstrap/setup rules for secret handling
-- document degraded/fallback behavior where OS keyring is unavailable
-
-Suggested deliverables:
-- `backend/secrets.py` or equivalent
-- tests for redaction and storage behavior
-- doc update in security/setup docs
-
-### 2. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
+### 1. M1-03 / M1-07 follow-up — Resolve auth-gate divergence for non-loopback exposure
 Status: OPEN (DECISION REQUIRED)
 Priority: P1
 Why next:

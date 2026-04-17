@@ -104,9 +104,10 @@ The work done so far is not the official plan itself. The official roadmap is M0
 - M1-08 Health and smoke tests: DONE
   - health routes and test coverage exist
 
-- M1-09 Secret storage strategy: PARTIAL
-  - ADR exists (`adr-0005-secret-storage.md`)
-  - shipped secret-storage subsystem not implemented
+- M1-09 Secret storage strategy: DONE
+  - implementation shipped in `backend/secrets_store.py`
+  - resolution order now supports env override, optional OS keyring, and explicit plaintext fallback with `0600` permissions
+  - `/system/info` exposes only redacted backend summaries, and setup/degraded behavior is documented in `docs/security/secret-storage.md`
 
 - M1-10 WebAuthn/passkey optional second factor: NOT STARTED
 
