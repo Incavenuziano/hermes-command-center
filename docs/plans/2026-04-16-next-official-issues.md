@@ -11,9 +11,9 @@ Before expanding more dashboard/control-plane surface area, finish the remaining
 ### M2 entry unlocked
 M1 is now complete. Continue in the official M2 order:
 
-1. M2-04 — Hermes-native chat streaming route/protocol
-2. M2-07 — sessions/chat UI
-3. M2-02 — dashboard completion against official scope
+1. M2-07 — sessions/chat UI
+2. M2-02 — dashboard completion against official scope
+3. M2-08 — agents page MVP with multi-agent summaries/quick actions
 
 ## Notes
 - Current dashboard/process/cron work remains useful, but should not be treated as completion of the official M1 foundation set.

@@ -146,7 +146,14 @@ The work done so far is not the official plan itself. The official roadmap is M0
 - M2-03 Sessions and session list API: DONE
   - overview and session detail exist
 
-- M2-04 Hermes-native chat streaming route and protocol: NOT STARTED
+- M2-04 Hermes-native chat streaming route and protocol: DONE
+  - backend transcript normalization implemented in `backend/chat_protocol.py`
+  - routes added in `backend/routes/chat.py`:
+    - `GET /ops/chat/transcript?session_id=...`
+    - `GET /ops/chat/stream?session_id=...&after_id=...`
+  - protocol documented in `docs/architecture/chat-streaming-protocol.md`
+  - transcript route reads real Hermes session files under `~/.hermes/sessions/session_<session_id>.json`
+  - SSE stream emits `contract.meta`, `chat.session`, `chat.message`, and heartbeat with cursor support via `after_id` / `Last-Event-ID`
 
 - M2-05 Approval and clarify queue backend: DONE
   - backend queue implemented in `backend/approvals.py` with routes in `backend/routes/approvals.py`

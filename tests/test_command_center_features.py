@@ -80,6 +80,34 @@ def _write_runtime_fixture(base: Path) -> None:
             'chat_type': 'dm',
         }
     }), encoding='utf-8')
+    (base / 'sessions' / 'session_sess-live-1.json').write_text(json.dumps({
+        'session_id': 'sess-live-1',
+        'model': 'gpt-5.4',
+        'platform': 'telegram',
+        'session_start': '2026-04-16T20:00:00',
+        'last_updated': '2026-04-16T20:05:00',
+        'message_count': 4,
+        'messages': [
+            {'role': 'user', 'content': 'hello'},
+            {'role': 'assistant', 'content': 'Hi there.'},
+            {
+                'role': 'assistant',
+                'content': '',
+                'finish_reason': 'tool_calls',
+                'tool_calls': [
+                    {
+                        'id': 'call-1',
+                        'type': 'function',
+                        'function': {
+                            'name': 'terminal',
+                            'arguments': '{"command":"pwd"}',
+                        },
+                    }
+                ],
+            },
+            {'role': 'tool', 'tool_call_id': 'call-1', 'content': '{"output":"/tmp"}'},
+        ],
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
     (base / 'processes.json').write_text(json.dumps([
         {
             'session_id': 'proc-live-1',
@@ -452,6 +480,60 @@ def test_sse_stream_replays_only_events_after_last_event_id(tmp_path, monkeypatc
     assert stream_status == 200
     assert 'event: cron.pause_requested' in stream_body
     assert 'event: process.kill_requested' not in stream_body
+
+
+def test_chat_transcript_route_returns_normalized_messages_from_hermes_session_file(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        status, headers, payload = _request(server, '/ops/chat/transcript?session_id=sess-live-1')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['X-Request-ID'] == payload['meta']['request_id']
+    assert payload['data']['session']['session_id'] == 'sess-live-1'
+    assert payload['data']['session']['message_count'] == 4
+    assert payload['data']['count'] == 4
+    assert payload['data']['items'][0]['message_id'] == 1
+    assert payload['data']['items'][0]['role'] == 'user'
+    assert payload['data']['items'][1]['content'] == 'Hi there.'
+    assert payload['data']['items'][2]['tool_calls'][0]['name'] == 'terminal'
+    assert payload['data']['items'][3]['tool_call_id'] == 'call-1'
+
+
+def test_chat_stream_route_emits_contract_and_message_events_with_cursor_support(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/ops/chat/stream?session_id=sess-live-1&after_id=2')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/event-stream')
+    assert headers['X-Contract-Version'] == '2026-04-15'
+    assert headers['X-Request-ID']
+    assert 'event: contract.meta' in body
+    assert 'event: chat.session' in body
+    assert 'event: chat.message' in body
+    assert 'id: 3' in body
+    assert 'id: 4' in body
+    assert 'id: 1' not in body
+    assert 'id: 2' not in body
+    assert ': heartbeat' in body
 
 
 def test_runtime_event_ingest_updates_derived_state_and_feed():
