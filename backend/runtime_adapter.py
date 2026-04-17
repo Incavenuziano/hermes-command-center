@@ -128,6 +128,8 @@ class HermesRuntimeAdapter:
                     'cwd': item.get('cwd'),
                     'task_id': item.get('task_id'),
                     'session_key': item.get('session_key'),
+                    'notify_on_complete': bool(item.get('notify_on_complete', False)),
+                    'watch_patterns': item.get('watch_patterns') if isinstance(item.get('watch_patterns'), list) else [],
                     'status': 'running' if alive else 'exited',
                     'started_at': self._from_ts(item.get('started_at')),
                     'updated_at': _now_iso(),

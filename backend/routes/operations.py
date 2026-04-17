@@ -125,6 +125,22 @@ def ops_read_only_state(handler) -> None:
     handler.send_data(read_only_mode_store.get_state())
 
 
+@route('GET', '/ops/processes', allow=('GET',))
+def ops_processes(handler) -> None:
+    _require_authenticated(handler)
+    processes = runtime_adapter.list_processes()
+    handler.send_data({'items': processes, 'count': len(processes)})
+
+
+@route('GET', '/ops/processes/proc-live-1', allow=('GET',))
+def ops_process_detail_static(handler) -> None:
+    _require_authenticated(handler)
+    process = runtime_adapter.get_process('proc-live-1')
+    if process is None:
+        raise RequestValidationError(status=404, code='ops.process_not_found', message='Process not found', details={'process_id': 'proc-live-1'})
+    handler.send_data({'process': process})
+
+
 @route('GET', '/ops/cron/jobs', allow=('GET',))
 def ops_cron_jobs(handler) -> None:
     _require_authenticated(handler)
@@ -185,6 +201,31 @@ def ops_process_kill(handler) -> None:
     process_id = payload.get('process_id')
     if not isinstance(process_id, str) or not process_id:
         raise RequestValidationError(status=400, code='ops.invalid_request', message='process_id is required', details={'field': 'process_id'})
+    process = runtime_adapter.kill_process(process_id)
+    event = derived_state_store.ingest_event({'kind': 'process.kill_requested', 'source': 'command-center', 'data': {'process_id': process_id, 'status': process.get('status')}})
+    audit_entry = _append_audit_entry(
+        handler,
+        session_id=session_id,
+        action_type='process.kill',
+        target_type='process',
+        target_id=process_id,
+        result=str(process.get('status') or 'unknown'),
+        details={'process': process, 'event_kind': event['kind']},
+    )
+    handler.send_data({'ok': True, 'process': process, 'event': event, 'audit_entry': audit_entry})
+
+
+@route('POST', '/ops/processes/control', allow=('POST',))
+def ops_process_control(handler) -> None:
+    session_id = _require_authenticated(handler)
+    _require_not_read_only()
+    payload = handler.read_json_body()
+    process_id = payload.get('process_id')
+    action = payload.get('action')
+    if not isinstance(process_id, str) or not process_id:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='process_id is required', details={'field': 'process_id'})
+    if action != 'kill':
+        raise RequestValidationError(status=400, code='ops.invalid_action', message='Unsupported process action', details={'action': action})
     process = runtime_adapter.kill_process(process_id)
     event = derived_state_store.ingest_event({'kind': 'process.kill_requested', 'source': 'command-center', 'data': {'process_id': process_id, 'status': process.get('status')}})
     audit_entry = _append_audit_entry(

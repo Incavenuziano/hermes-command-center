@@ -220,9 +220,11 @@ The work done so far is not the official plan itself. The official roadmap is M0
   - drill-down panel inspects normalized event payloads without leaving the page
   - UI scope documented in `docs/architecture/activity-page-ui.md`
 
-- M3-08 Process registry backend and guarded background-task controls: PARTIAL
-  - process surface and kill control exist
-  - no fully guarded registry backend aligned to official issue yet
+- M3-08 Process registry backend and guarded background-task controls: DONE
+  - explicit process registry routes now exist for list/detail/control in `backend/routes/operations.py`
+  - process entries now expose background-task metadata such as `notify_on_complete` and `watch_patterns`
+  - guarded control endpoint currently accepts only explicit supported actions and rejects unsupported ones with `ops.invalid_action`
+  - backend scope documented in `docs/architecture/process-registry-backend.md`
 
 - M3-09 Processes page before full terminal support: PARTIAL
   - process listing exists inside main dashboard

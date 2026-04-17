@@ -563,6 +563,50 @@ def test_runs_activity_timeline_supports_retention_and_kind_filter(tmp_path, mon
     assert timeline_payload['data']['retention']['max_items'] == 100
 
 
+def test_process_registry_backend_exposes_list_detail_and_guarded_controls(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+    monkeypatch.setattr('os.kill', lambda pid, sig: None)
+
+    server, thread = _start_test_server()
+    try:
+        list_status, _, list_payload = _request(server, '/ops/processes')
+        detail_status, _, detail_payload = _request(server, '/ops/processes/proc-live-1')
+        invalid_status, _, invalid_payload = _request(
+            server,
+            '/ops/processes/control',
+            method='POST',
+            json_body={'process_id': 'proc-live-1', 'action': 'pause'},
+        )
+        control_status, _, control_payload = _request(
+            server,
+            '/ops/processes/control',
+            method='POST',
+            json_body={'process_id': 'proc-live-1', 'action': 'kill'},
+        )
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert list_status == 200
+    assert list_payload['data']['count'] == 1
+    assert list_payload['data']['items'][0]['process_id'] == 'proc-live-1'
+    assert list_payload['data']['items'][0]['notify_on_complete'] is False
+    assert list_payload['data']['items'][0]['watch_patterns'] == []
+    assert detail_status == 200
+    assert detail_payload['data']['process']['process_id'] == 'proc-live-1'
+    assert detail_payload['data']['process']['task_id'] == 'sess-live-1'
+    assert invalid_status == 400
+    assert invalid_payload['error']['code'] == 'ops.invalid_action'
+    assert control_status == 200
+    assert control_payload['data']['process']['process_id'] == 'proc-live-1'
+    assert control_payload['data']['event']['kind'] == 'process.kill_requested'
+    assert control_payload['data']['audit_entry']['action']['type'] == 'process.kill'
+
+
 def test_runtime_event_log_persists_across_backend_restart(tmp_path, monkeypatch):
     runtime_home = tmp_path / 'hermes-home'
     _write_runtime_fixture(runtime_home)
