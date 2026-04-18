@@ -249,6 +249,21 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'dashboard-live-activity' in body
     assert 'dashboard-top-agents' in body
     assert 'dashboard-cron-overview' in body
+    assert 'sidebar-collapse-button' in body
+    assert 'page-subtitle' in body
+    assert 'hc-nav-icon' in body
+    assert 'status-pill-dot' in body
+    assert 'dashboard-hero-chart' in body
+    assert 'usage-main-chart' in body
+    assert 'split-view' in body
+    assert '<svg' in body
+    assert 'nav-item-label' in body
+    assert 'nav-item-badge' in body
+    assert 'topbar-clock' in body
+    assert 'dashboard-kpi-card' in body
+    assert 'live-activity-feed' in body
+    assert 'usage-breaker-card' in body
+    assert 'usage-agent-share-bar' in body
 
 
 def test_agents_page_is_served_with_same_frontend_shell():
@@ -267,6 +282,10 @@ def test_agents_page_is_served_with_same_frontend_shell():
     assert 'agents-page-detail' in body
     assert 'agents-page-stats' in body
     assert 'agents-page-sessions' in body
+    assert 'split-view' in body
+    assert 'agent-list-row' in body
+    assert 'agent-detail-card' in body
+    assert 'agent-session-table' in body
 
 
 def test_cron_page_is_served_with_run_history_and_output_panels():
@@ -286,6 +305,9 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
     assert 'cron-output-inspection' in body
     assert 'cron-summary-grid' in body
     assert 'cron-quick-actions' in body
+    assert 'cron-split-view' in body
+    assert 'cron-job-table' in body
+    assert 'cron-output-terminal' in body
 
 
 def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_panels():
@@ -440,6 +462,8 @@ def test_usage_page_is_served_with_operational_panels():
     assert 'usage-stat-grid' in body
     assert 'usage-top-sessions' in body
     assert 'usage-performance-summary' in body
+    assert 'usage-breaker-card' in body
+    assert 'usage-agent-share-bar' in body
 
 
 def test_new_navigation_placeholder_routes_are_served():
@@ -488,11 +512,14 @@ def test_frontend_shell_exposes_premium_chat_and_sessions_surfaces():
     assert 'chat-transcript' in chat_body
     assert 'chat-stream-status' in chat_body
     assert 'chat-inspector' in chat_body
+    assert 'chat-message-card' in chat_body
+    assert 'chat-message-tool' in chat_body
     assert sessions_status == 200
     assert 'sessions-list' in sessions_body
     assert 'session-detail' in sessions_body
     assert 'sessions-stats' in sessions_body
     assert 'sessions-related-transcript' in sessions_body
+    assert 'session-list-row' in sessions_body
 
 
 def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
@@ -509,10 +536,12 @@ def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
     assert 'doctor-list' in doctor_body
     assert 'doctor-detail' in doctor_body
     assert 'doctor-summary-grid' in doctor_body
+    assert 'doctor-diagnostics-table' in doctor_body
     assert logs_status == 200
     assert 'logs-list' in logs_body
     assert 'logs-filter-bar' in logs_body
     assert 'logs-detail' in logs_body
+    assert 'logs-live-stream' in logs_body
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -619,6 +648,91 @@ def test_frontend_javascript_bundle_is_served():
     assert 'dashboard-live-activity' in body
     assert 'dashboard-top-agents' in body
     assert 'dashboard-cron-overview' in body
+    assert 'renderIcon' in body
+    assert 'iconPaths' in body
+    assert 'buildStatCard' in body
+    assert 'buildSparkline' in body
+    assert 'buildTimelineItem' in body
+    assert 'sidebar-collapse-button' in body
+    assert 'page-subtitle' in body
+    assert 'dashboard-hero-chart' in body
+    assert 'usage-main-chart' in body
+    assert 'nav-item-label' in body
+    assert 'nav-item-badge' in body
+    assert 'topbar-clock' in body
+    assert 'dashboard-kpi-card' in body
+    assert 'live-activity-feed' in body
+    assert 'usage-breaker-card' in body
+    assert 'usage-agent-share-bar' in body
+    assert 'buildProgressBar' in body
+    assert 'buildUsageAreaChart' in body
+    assert 'agent-list-row' in body
+    assert 'agent-detail-card' in body
+    assert 'agent-session-table' in body
+    assert 'session-list-row' in body
+    assert 'chat-message-card' in body
+    assert 'chat-message-tool' in body
+    assert 'cron-split-view' in body
+    assert 'cron-job-table' in body
+    assert 'cron-output-terminal' in body
+    assert 'doctor-diagnostics-table' in body
+    assert 'logs-live-stream' in body
+
+
+def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/static/styles.css')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'css' in headers['Content-Type']
+    assert '--font-sans' in body
+    assert '--font-mono' in body
+    assert ':root[data-theme="premium"]' in body
+    assert ':root[data-theme="mission"]' in body
+    assert '--bg-deep' in body
+    assert '--bg-surface' in body
+    assert '--bg-panel' in body
+    assert '--accent-bg' in body
+    assert '--success-bg' in body
+    assert '--warning-bg' in body
+    assert '--danger-bg' in body
+    assert '.hc-shell' in body
+    assert '.hc-sidebar' in body
+    assert '.hc-topbar' in body
+    assert '.hc-page-header' in body
+    assert '.hc-stat' in body
+    assert '.hc-panel' in body
+    assert '.hc-feed-item' in body
+    assert '.hc-split' in body or '.split-view' in body
+    assert '@media (max-width: 1180px)' in body
+    assert '@media (max-width: 900px)' in body
+    assert '.page-toolbar-actions' in body
+    assert '.topbar-right' in body
+    assert '.sidebar-collapsed' in body
+    assert '.global-search-shell' in body
+    assert '.split-view' in body
+    assert '.app-shell' in body
+
+
+def test_frontend_html_loads_geist_fonts_for_high_fidelity_shell():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert 'fonts.googleapis.com' in body
+    assert 'Geist' in body
+    assert 'Geist+Mono' in body or 'Geist Mono' in body
 
 
 def test_runtime_event_ingest_requires_valid_csrf_token():

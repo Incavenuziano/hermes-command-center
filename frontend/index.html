@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Hermes Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
     <main class="app-shell" id="app-shell">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-          <div class="sidebar-brand-mark" id="sidebar-brand-mark" aria-hidden="true">✦</div>
+          <div class="sidebar-brand-mark" id="sidebar-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20L12 4l8 16M7 14h10"></path></svg></div>
           <div class="sidebar-brand-copy">
             <p class="eyebrow">Hermes</p>
             <strong>command-center</strong>
@@ -20,45 +23,45 @@
         <nav class="sidebar-nav">
           <section class="nav-sector">
             <h2>Visão Geral</h2>
-            <a href="/" data-nav-item="dashboard">Dashboard</a>
-            <a href="/activity" data-nav-item="activity">Atividade</a>
-            <a href="/usage" data-nav-item="usage">Usage</a>
+            <a href="/" data-nav-item="dashboard" data-short="DB"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"></path></svg></span><span class="nav-item-label">Dashboard</span><span class="nav-item-badge">●</span></a>
+            <a href="/activity" data-nav-item="activity" data-short="AT"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-9 4 18 3-9h4"></path></svg></span><span class="nav-item-label">Atividade</span><span class="nav-item-badge">12</span></a>
+            <a href="/usage" data-nav-item="usage" data-short="US"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 4 4 5-7"></path></svg></span><span class="nav-item-label">Usage</span></a>
           </section>
 
           <section class="nav-sector">
             <h2>Agentes</h2>
-            <a href="/agents" data-nav-item="agents">Agentes</a>
-            <a href="/chat" data-nav-item="chat">Conversar</a>
-            <a href="/sessions" data-nav-item="sessions">Sessões</a>
+            <a href="/agents" data-nav-item="agents" data-short="AG"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></svg></span><span class="nav-item-label">Agentes</span><span class="nav-item-badge">6</span></a>
+            <a href="/chat" data-nav-item="chat" data-short="CH"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span><span class="nav-item-label">Conversar</span></a>
+            <a href="/sessions" data-nav-item="sessions" data-short="SE"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18M7 4v3M12 4v3M17 4v3"></path></svg></span><span class="nav-item-label">Sessões</span><span class="nav-item-badge">3</span></a>
           </section>
 
           <section class="nav-sector">
             <h2>Trabalhos</h2>
-            <a href="/tasks" data-nav-item="tasks">Tarefas</a>
-            <a href="/cron" data-nav-item="cron">Crons</a>
-            <a href="/calendar" data-nav-item="calendar">Calendario</a>
-            <a href="/integrations" data-nav-item="integrations">Integrações</a>
-            <a href="/skill" data-nav-item="skill">Skill</a>
+            <a href="/tasks" data-nav-item="tasks" data-short="TK"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></span><span class="nav-item-label">Tarefas</span></a>
+            <a href="/cron" data-nav-item="cron" data-short="CR"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg></span><span class="nav-item-label">Crons</span><span class="nav-item-badge">!</span></a>
+            <a href="/calendar" data-nav-item="calendar" data-short="CA"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18"></path></svg></span><span class="nav-item-label">Calendario</span></a>
+            <a href="/integrations" data-nav-item="integrations" data-short="IN"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg></span><span class="nav-item-label">Integrações</span></a>
+            <a href="/skill" data-nav-item="skill" data-short="SK"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"></path></svg></span><span class="nav-item-label">Skill</span></a>
           </section>
 
           <section class="nav-sector">
             <h2>Conhecimento</h2>
-            <a href="/memory" data-nav-item="memory">Memoria</a>
-            <a href="/documents" data-nav-item="documents">Documentos</a>
-            <a href="/database" data-nav-item="database">DataBase</a>
-            <a href="/apis" data-nav-item="apis">API's</a>
-            <a href="/channels" data-nav-item="channels">Canais</a>
-            <a href="/hooks" data-nav-item="hooks">Segurança Hooks</a>
-            <a href="/preferences" data-nav-item="preferences">Preferencias</a>
+            <a href="/memory" data-nav-item="memory"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zM10 9h4M10 13h4M10 17h2"></path></svg></span><span class="nav-item-label">Memoria</span></a>
+            <a href="/documents" data-nav-item="documents"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6"></path></svg></span><span class="nav-item-label">Documentos</span></a>
+            <a href="/database" data-nav-item="database"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"></path></svg></span><span class="nav-item-label">DataBase</span></a>
+            <a href="/apis" data-nav-item="apis"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.8 1.8M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.8-1.8"></path></svg></span><span class="nav-item-label">API's</span></a>
+            <a href="/channels" data-nav-item="channels"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 14 0M8 12a4 4 0 0 1 8 0M11 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0M12 19v2"></path></svg></span><span class="nav-item-label">Canais</span></a>
+            <a href="/hooks" data-nav-item="hooks"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7z"></path></svg></span><span class="nav-item-label">Segurança Hooks</span></a>
+            <a href="/preferences" data-nav-item="preferences"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9M12 7v5l3 3M19 3l2 2M19 7l2-2"></path></svg></span><span class="nav-item-label">Preferencias</span></a>
           </section>
 
           <section class="nav-sector">
             <h2>Sistema</h2>
-            <a href="/doctor" data-nav-item="doctor">Doctor</a>
-            <a href="/terminal" data-nav-item="terminal">Terminal</a>
-            <a href="/logs" data-nav-item="logs">Logs</a>
-            <a href="/tailscale" data-nav-item="tailscale">Tailscale</a>
-            <a href="/config" data-nav-item="config">Config</a>
+            <a href="/doctor" data-nav-item="doctor"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM8 12h8M12 8v8"></path></svg></span><span class="nav-item-label">Doctor</span></a>
+            <a href="/terminal" data-nav-item="terminal"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"></path></svg></span><span class="nav-item-label">Terminal</span></a>
+            <a href="/logs" data-nav-item="logs"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg></span><span class="nav-item-label">Logs</span></a>
+            <a href="/tailscale" data-nav-item="tailscale"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5 20a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM12 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM12 20a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM19 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM19 20a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"></path></svg></span><span class="nav-item-label">Tailscale</span></a>
+            <a href="/config" data-nav-item="config"><span class="hc-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span><span class="nav-item-label">Config</span></a>
           </section>
         </nav>
         <div class="sidebar-footer" id="sidebar-footer">
@@ -69,6 +72,7 @@
               <span>trusted-local · control plane</span>
             </div>
           </div>
+          <button id="sidebar-collapse-button" class="icon-button sidebar-collapse-button" type="button" aria-label="Toggle sidebar">⇤</button>
         </div>
       </aside>
 
@@ -84,10 +88,12 @@
           </div>
           <div class="topbar-right">
             <label class="global-search-shell" for="global-search">
+              <span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"></path></svg></span>
               <input id="global-search" type="search" placeholder="Search across surfaces" aria-label="Procurar no menu">
               <span class="global-search-shortcut" id="global-search-shortcut">⌘K</span>
             </label>
-            <span id="gateway-runtime-status" class="status-pill offline">offline</span>
+            <span id="gateway-runtime-status" class="status-pill offline"><span class="status-pill-dot" id="status-pill-dot"></span>offline</span>
+            <span id="topbar-clock" class="topbar-clock">--:--:-- UTC</span>
             <button id="gateway-runtime-button" type="button" class="action-button danger">Kill Hermes</button>
             <button id="refresh-button" type="button" class="action-button">Refresh</button>
           </div>
@@ -96,6 +102,7 @@
           <div>
             <p class="eyebrow">Hermes</p>
             <h1 id="page-heading">Dashboard</h1>
+            <p id="page-subtitle" class="page-subtitle">Control plane overview</p>
           </div>
           <div class="page-toolbar-actions">
             <span class="theme-pill" id="page-theme-pill">Premium ops</span>
@@ -105,14 +112,18 @@
         </div>
 
         <section id="dashboard-section" class="page-section grid stats dashboard-stat-grid" data-page="dashboard">
-          <article><h2>Agents</h2><p id="count-agents">—</p></article>
-          <article><h2>Sessions</h2><p id="count-sessions">—</p></article>
-          <article><h2>Processes</h2><p id="count-processes">—</p></article>
-          <article><h2>Cron Jobs</h2><p id="count-cron">—</p></article>
+          <article class="dashboard-kpi-card"><h2>Agents</h2><p id="count-agents">—</p></article>
+          <article class="dashboard-kpi-card"><h2>Sessions</h2><p id="count-sessions">—</p></article>
+          <article class="dashboard-kpi-card"><h2>Processes</h2><p id="count-processes">—</p></article>
+          <article class="dashboard-kpi-card"><h2>Cron Jobs</h2><p id="count-cron">—</p></article>
         </section>
 
-        <section id="dashboard-overview-section" class="page-section grid panels panels-three" data-page="dashboard">
-          <article id="dashboard-live-activity">
+        <section id="dashboard-overview-section" class="page-section grid panels panels-three split-view" data-page="dashboard">
+          <article id="dashboard-hero-chart" class="chart-panel">
+            <div class="panel-header"><h2>Command Center Signal</h2><p class="panel-caption">Prototype-grade hero chart scaffold.</p></div>
+            <div class="usage-main-chart dashboard-hero-chart"></div>
+          </article>
+          <article id="dashboard-live-activity" class="live-activity-feed">
             <div class="panel-header"><h2>Live Activity</h2><p id="approvals-summary" class="panel-caption">No pending approvals.</p></div>
             <ul id="approvals-list" class="item-list"></ul>
           </article>
@@ -152,9 +163,10 @@
           </article>
         </section>
 
-        <section id="usage-page-section" class="page-section grid panels" data-page="usage">
-          <article>
+        <section id="usage-page-section" class="page-section grid panels split-view" data-page="usage">
+          <article class="usage-breaker-card">
             <div class="panel-header"><h2>Usage</h2><p id="usage-summary" class="panel-caption">Usage and performance snapshot.</p></div>
+            <div id="usage-main-chart" class="usage-main-chart"></div>
             <div id="usage-stat-grid" class="usage-stat-grid"></div>
             <ul id="usage-list" class="item-list"></ul>
             <div id="usage-performance-summary" class="usage-performance-summary"></div>
@@ -174,29 +186,31 @@
           </article>
           <article>
             <div class="panel-header"><h2>Agent Breakdown</h2><p class="panel-caption">Per-agent token and cost distribution.</p></div>
+            <div id="usage-agent-share-bar" class="usage-agent-share-bar"></div>
             <ul id="usage-agent-breakdown" class="item-list"></ul>
           </article>
         </section>
 
-        <section id="agents-page-section" class="page-section grid panels" data-page="agents">
-          <article>
+        <section id="agents-page-section" class="page-section grid panels split-view" data-page="agents">
+          <article class="agent-detail-card">
             <div class="panel-header"><h2>Agents Page</h2><p class="panel-caption">Multi-agent summaries and quick actions.</p></div>
-            <ul id="agents-page-list" class="item-list"></ul>
+            <ul id="agents-page-list" class="item-list agent-list-row"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Agent Detail</h2></div>
             <div id="agents-page-stats" class="usage-stat-grid"></div>
             <pre id="agents-page-detail">Select an agent to inspect details.</pre>
             <div class="panel-header"><h2>Recent Sessions</h2><p class="panel-caption">Most relevant sessions for the selected agent.</p></div>
-            <ul id="agents-page-sessions" class="item-list"></ul>
+            <ul id="agents-page-sessions" class="item-list agent-session-table"></ul>
           </article>
         </section>
 
-        <section id="chat-page-section" class="page-section grid panels" data-page="chat">
-          <article>
+        <section id="chat-page-section" class="page-section grid panels split-view" data-page="chat">
+          <article class="chat-message-card">
             <div class="panel-header"><h2>Conversar</h2><p class="panel-caption">Transcript e stream da sessão ativa.</p></div>
             <div id="chat-session-summary" class="item-meta">Select a session to load transcript.</div>
-            <ul id="chat-transcript" class="item-list"></ul>
+            <div class="chat-message-tool" hidden></div>
+            <ul id="chat-transcript" class="item-list chat-message-card"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Chat Status</h2></div>
@@ -206,11 +220,11 @@
           </article>
         </section>
 
-        <section id="sessions-page-section" class="page-section grid panels" data-page="sessions">
+        <section id="sessions-page-section" class="page-section grid panels split-view" data-page="sessions">
           <article>
             <div class="panel-header"><h2>Sessões</h2></div>
             <div id="sessions-stats" class="usage-stat-grid"></div>
-            <ul id="sessions-list" class="item-list"></ul>
+            <ul id="sessions-list" class="item-list session-list-row"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Session Detail</h2></div>
@@ -238,14 +252,14 @@
           </article>
         </section>
 
-        <section id="cron-page-section" class="page-section grid panels" data-page="cron">
+        <section id="cron-page-section" class="page-section grid panels split-view cron-split-view" data-page="cron">
           <article>
             <div class="panel-header"><h2>Cron Page</h2><p class="panel-caption">Run history, output inspection, and guarded actions.</p></div>
             <div id="cron-summary-grid" class="usage-stat-grid"></div>
             <div id="cron-quick-actions" class="actions-row">
               <button id="cron-refresh-button" type="button" class="action-button ghost">Refresh Cron</button>
             </div>
-            <ul id="cron-page-list" class="item-list"></ul>
+            <ul id="cron-page-list" class="item-list cron-job-table"></ul>
           </article>
           <article>
             <div class="panel-header"><h2>Cron Run History</h2></div>
@@ -253,7 +267,7 @@
           </article>
           <article>
             <div class="panel-header"><h2>Cron Output Inspection</h2></div>
-            <pre id="cron-output-inspection">Select a cron job to inspect its latest output/history.</pre>
+            <pre id="cron-output-inspection" class="cron-output-terminal">Select a cron job to inspect its latest output/history.</pre>
           </article>
         </section>
 
@@ -330,7 +344,7 @@
           <article>
             <div class="panel-header"><h2>Doctor</h2><p class="panel-caption">Operational diagnostics.</p></div>
             <div id="doctor-summary-grid" class="usage-stat-grid"></div>
-            <ul id="doctor-list" class="item-list"></ul>
+            <ul id="doctor-list" class="item-list doctor-diagnostics-table"></ul>
           </article>
           <article><div class="panel-header"><h2>Doctor Detail</h2></div><pre id="doctor-detail">Loading doctor data.</pre></article>
         </section>
@@ -351,7 +365,7 @@
               <button id="logs-filter-approval" type="button" class="action-button ghost">Approvals</button>
               <button id="logs-filter-process" type="button" class="action-button ghost">Processes</button>
             </div>
-            <ul id="logs-list" class="item-list"></ul>
+            <ul id="logs-list" class="item-list logs-live-stream"></ul>
           </article>
           <article><div class="panel-header"><h2>Log Detail</h2></div><pre id="logs-detail">Select a log/event to inspect details.</pre></article>
         </section>

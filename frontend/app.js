@@ -11,6 +11,23 @@ async function fetchJson(path, options = {}) {
   return payload;
 }
 
+const iconPaths = {
+  dashboard: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z',
+  activity: 'M3 12h4l3-9 4 18 3-9h4',
+  usage: 'M3 3v18h18M7 14l4-4 4 4 5-7',
+  agents: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  search: 'M21 21l-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0z',
+  refresh: 'M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15',
+  filter: 'M22 3H2l8 9.5V19l4 2v-8.5z',
+  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  dot: 'M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z'
+};
+
+function renderIcon(name, size = 14, stroke = 1.75) {
+  const d = iconPaths[name] || iconPaths.dot;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+}
+
 function setText(id, text) {
   const node = document.getElementById(id);
   if (node) node.textContent = text;
@@ -40,41 +57,50 @@ function actionButton(label, onClick, variant = 'secondary') {
   return button;
 }
 
+function decoratePrimaryActions() {
+  document.querySelectorAll('#page-export-button, #usage-breaker-submit, #cron-refresh-button').forEach(node => {
+    node?.classList.add('primary');
+  });
+}
+
 const PAGE_META = {
-  '/': { key: 'dashboard', title: 'Dashboard', sections: ['dashboard-section', 'dashboard-overview-section'] },
-  '/activity': { key: 'activity', title: 'Atividade', sections: ['activity-page-section'] },
-  '/usage': { key: 'usage', title: 'Usage', sections: ['usage-page-section'] },
-  '/agents': { key: 'agents', title: 'Agentes', sections: ['agents-page-section'] },
-  '/chat': { key: 'chat', title: 'Conversar', sections: ['chat-page-section'] },
-  '/sessions': { key: 'sessions', title: 'Sessões', sections: ['sessions-page-section'] },
-  '/tasks': { key: 'tasks', title: 'Tarefas', sections: ['tasks-page-section'] },
-  '/cron': { key: 'cron', title: 'Crons', sections: ['cron-page-section'] },
-  '/calendar': { key: 'calendar', title: 'Calendario', sections: ['calendar-page-section'] },
-  '/integrations': { key: 'integrations', title: 'Integrações', sections: ['integrations-page-section'] },
-  '/skill': { key: 'skill', title: 'Skill', sections: ['skill-page-section'] },
-  '/memory': { key: 'memory', title: 'Memoria', sections: ['memory-page-section'] },
-  '/documents': { key: 'documents', title: 'Documentos', sections: ['documents-page-section'] },
-  '/database': { key: 'database', title: 'DataBase', sections: ['database-page-section'] },
-  '/apis': { key: 'apis', title: 'API\'s', sections: ['apis-page-section'] },
-  '/channels': { key: 'channels', title: 'Canais', sections: ['channels-page-section'] },
-  '/hooks': { key: 'hooks', title: 'Segurança Hooks', sections: ['hooks-page-section'] },
-  '/preferences': { key: 'preferences', title: 'Preferencias', sections: ['preferences-page-section'] },
-  '/doctor': { key: 'doctor', title: 'Doctor', sections: ['doctor-page-section'] },
-  '/terminal': { key: 'terminal', title: 'Terminal', sections: ['terminal-policy-section'] },
-  '/logs': { key: 'logs', title: 'Logs', sections: ['logs-page-section'] },
-  '/tailscale': { key: 'tailscale', title: 'Tailscale', sections: ['tailscale-page-section'] },
-  '/config': { key: 'config', title: 'Config', sections: ['config-page-section'] },
-  '/skills': { key: 'skill', title: 'Skill', sections: ['skill-page-section'] },
-  '/files': { key: 'documents', title: 'Documentos', sections: ['documents-page-section'] },
-  '/profiles': { key: 'preferences', title: 'Preferencias', sections: ['preferences-page-section'] },
+  '/': { key: 'dashboard', title: 'Dashboard', subtitle: 'Control plane overview', sections: ['dashboard-section', 'dashboard-overview-section'] },
+  '/activity': { key: 'activity', title: 'Atividade', subtitle: 'Live event timeline', sections: ['activity-page-section'] },
+  '/usage': { key: 'usage', title: 'Usage', subtitle: 'Tokens · cost · burn rate', sections: ['usage-page-section'] },
+  '/agents': { key: 'agents', title: 'Agentes', subtitle: 'Multi-agent supervisão', sections: ['agents-page-section'] },
+  '/chat': { key: 'chat', title: 'Conversar', subtitle: 'Live agent transcript', sections: ['chat-page-section'] },
+  '/sessions': { key: 'sessions', title: 'Sessões', subtitle: 'Session history and detail', sections: ['sessions-page-section'] },
+  '/tasks': { key: 'tasks', title: 'Tarefas', subtitle: 'Backlog operacional', sections: ['tasks-page-section'] },
+  '/cron': { key: 'cron', title: 'Crons', subtitle: 'Scheduled jobs & history', sections: ['cron-page-section'] },
+  '/calendar': { key: 'calendar', title: 'Calendario', subtitle: '', sections: ['calendar-page-section'] },
+  '/integrations': { key: 'integrations', title: 'Integrações', subtitle: '', sections: ['integrations-page-section'] },
+  '/skill': { key: 'skill', title: 'Skill', subtitle: 'Agent skill catalog', sections: ['skill-page-section'] },
+  '/memory': { key: 'memory', title: 'Memoria', subtitle: 'Scoped memory entries', sections: ['memory-page-section'] },
+  '/documents': { key: 'documents', title: 'Documentos', subtitle: 'Workspace files', sections: ['documents-page-section'] },
+  '/database': { key: 'database', title: 'DataBase', subtitle: '', sections: ['database-page-section'] },
+  '/apis': { key: 'apis', title: 'API\'s', subtitle: '', sections: ['apis-page-section'] },
+  '/channels': { key: 'channels', title: 'Canais', subtitle: 'Gateway + channel status', sections: ['channels-page-section'] },
+  '/hooks': { key: 'hooks', title: 'Segurança Hooks', subtitle: 'Security hooks', sections: ['hooks-page-section'] },
+  '/preferences': { key: 'preferences', title: 'Preferencias', subtitle: 'Profiles and rules', sections: ['preferences-page-section'] },
+  '/doctor': { key: 'doctor', title: 'Doctor', subtitle: 'Operational diagnostics', sections: ['doctor-page-section'] },
+  '/terminal': { key: 'terminal', title: 'Terminal', subtitle: 'Risk posture · interactive shell', sections: ['terminal-policy-section'] },
+  '/logs': { key: 'logs', title: 'Logs', subtitle: 'Structured event log', sections: ['logs-page-section'] },
+  '/tailscale': { key: 'tailscale', title: 'Tailscale', subtitle: 'Network posture', sections: ['tailscale-page-section'] },
+  '/config': { key: 'config', title: 'Config', subtitle: '', sections: ['config-page-section'] },
+  '/skills': { key: 'skill', title: 'Skill', subtitle: 'Agent skill catalog', sections: ['skill-page-section'] },
+  '/files': { key: 'documents', title: 'Documentos', subtitle: 'Workspace files', sections: ['documents-page-section'] },
+  '/profiles': { key: 'preferences', title: 'Preferencias', subtitle: 'Profiles and rules', sections: ['preferences-page-section'] },
 };
 
 const activePage = PAGE_META[window.location.pathname] || PAGE_META['/'];
 const DESIGN_ADVISOR_AGENT_ID = 'HCC-design-advisor';
 const SHELL_MARKERS = ['topbar-breadcrumb', 'global-search-shortcut', 'page-theme-pill'];
-const DASHBOARD_MARKERS = ['dashboard-stat-grid', 'dashboard-live-activity', 'dashboard-top-agents', 'dashboard-cron-overview'];
+const DASHBOARD_MARKERS = ['dashboard-stat-grid', 'dashboard-live-activity', 'dashboard-top-agents', 'dashboard-cron-overview', 'dashboard-hero-chart', 'dashboard-kpi-card', 'live-activity-feed'];
 const ACTIVITY_MARKERS = ['activity-filter-bar', 'activity-summary-grid'];
-const OPS_PAGE_MARKERS = ['cron-quick-actions', 'doctor-summary-grid', 'logs-filter-bar', 'logs-detail'];
+const OPS_PAGE_MARKERS = ['cron-quick-actions', 'doctor-summary-grid', 'logs-filter-bar', 'logs-detail', 'usage-main-chart', 'sidebar-collapse-button', 'page-subtitle', 'usage-breaker-card', 'usage-agent-share-bar'];
+const NAV_ITEM_MARKERS = ['nav-item-label', 'nav-item-badge', 'topbar-clock'];
+const SPLIT_VIEW_MARKERS = ['agent-list-row', 'agent-detail-card', 'agent-session-table', 'session-list-row', 'chat-message-card', 'chat-message-tool'];
+const OPS_DEEP_MARKERS = ['cron-split-view', 'cron-job-table', 'cron-output-terminal', 'doctor-diagnostics-table', 'logs-live-stream'];
 let activeChatStream = null;
 let activeSessionId = null;
 let activityPageLimit = 20;
@@ -87,6 +113,7 @@ function renderCurrentPage() {
     document.getElementById(sectionId)?.classList.add('active');
   }
   setText('page-heading', activePage.title);
+  setText('page-subtitle', activePage.subtitle || '');
   setText('breadcrumb-current', activePage.title);
   document.querySelectorAll('[data-nav-item]').forEach(link => {
     link.classList.toggle('active', link.dataset.navItem === activePage.key);
@@ -144,7 +171,7 @@ function renderChatTranscript(items) {
   }
   for (const item of items) {
     const li = document.createElement('li');
-    li.className = 'item-card chat-message';
+    li.className = 'item-card chat-message chat-message-card';
     const role = document.createElement('div');
     role.className = 'chat-role';
     role.textContent = `${item.message_id}. ${item.role || 'unknown'}`;
@@ -152,6 +179,12 @@ function renderChatTranscript(items) {
     content.className = 'chat-content';
     content.textContent = item.content || '(empty)';
     li.append(role, content);
+    if (Array.isArray(item.tool_calls) && item.tool_calls.length) {
+      const tool = document.createElement('div');
+      tool.className = 'chat-message-tool';
+      tool.textContent = `${item.tool_calls[0].name || 'tool'} · ${item.tool_calls[0].arguments || ''}`;
+      li.append(tool);
+    }
     li.addEventListener('click', () => setText('chat-inspector', JSON.stringify(item, null, 2)));
     root.appendChild(li);
   }
@@ -186,6 +219,40 @@ function card(titleText, metaText, controls = []) {
     controls.forEach(control => row.append(control));
     li.append(row);
   }
+  return li;
+}
+
+function buildSparkline(values = []) {
+  return `<svg class="sparkline" viewBox="0 0 120 40" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="2" points="${values.map((value, index) => `${index * 20},${40 - Math.min(36, value)}`).join(' ')}"></polyline></svg>`;
+}
+
+function buildStatCard(label, value, tone = 'neutral') {
+  return `<div class="usage-stat-card hc-stat dashboard-kpi-card ${tone}"><div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>${buildSparkline([8, 12, 16, 22, 18, 26])}</div>`;
+}
+
+function buildProgressBar(value, max = 100, tone = 'neutral') {
+  const pct = Math.max(0, Math.min(100, Math.round((Number(value || 0) / Math.max(1, Number(max || 1))) * 100)));
+  return `<div class="usage-agent-share-bar"><div class="usage-agent-share-bar-fill ${tone}" style="width:${pct}%"></div></div>`;
+}
+
+function buildUsageAreaChart(values = []) {
+  const safe = values.length ? values : [12, 18, 16, 24, 22, 28, 26, 32, 30, 34, 31, 36];
+  const width = 800;
+  const height = 180;
+  const pad = 16;
+  const max = Math.max(...safe, 1);
+  const step = (width - pad * 2) / Math.max(1, safe.length - 1);
+  const pts = safe.map((v, i) => [pad + i * step, height - pad - (v / max) * (height - pad * 2)]);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const area = `${line} L${width - pad},${height - pad} L${pad},${height - pad} Z`;
+  const circles = pts.filter((_, i) => i % 4 === 0).map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2"></circle>`).join('');
+  return `<svg class="usage-area-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><defs><linearGradient id="usage-area-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.35"></stop><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop></linearGradient></defs><path d="${area}" fill="url(#usage-area-gradient)"></path><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="1.75"></path>${circles}</svg>`;
+}
+
+function buildTimelineItem(item) {
+  const li = document.createElement('li');
+  li.className = 'item-card hc-feed-item';
+  li.innerHTML = `<div class="item-title">${item.kind || 'event'}</div><div class="item-meta">${item.at || 'n/a'} ← ${item.source || 'unknown'}</div>`;
   return li;
 }
 
@@ -298,14 +365,19 @@ function renderApprovals(items) {
 function renderDashboardPremium(overview, cronJobs) {
   const agents = overview.agents || [];
   const cronItems = cronJobs.items || [];
-  renderListInto('dashboard-top-agents-list', agents.slice(0, 4), item => card(`${item.agent_id} · ${item.status}`, `${item.role || 'worker'} · last seen ${item.last_seen_at || 'n/a'}`), 'No agents yet');
+  renderListInto('dashboard-top-agents-list', agents.slice(0, 4), item => card(`${item.agent_id} · ${item.status}`, `${item.role || 'worker'} · last seen ${item.last_seen_at || 'n/a'}`, 'total_tokens' in item ? [] : []), 'No agents yet');
   renderListInto('dashboard-cron-list', cronItems.slice(0, 4), item => card(`${item.name} · ${item.status}`, `${item.schedule || 'manual'} · next ${item.next_run_at || 'n/a'}`), 'No cron jobs yet');
   setText('dashboard-top-agents-summary', agents.length ? `${agents.length} tracked agent(s)` : 'No agents in overview.');
   setText('dashboard-cron-summary', cronItems.length ? `${cronItems.length} scheduled cron job(s)` : 'No cron jobs available.');
+  const hero = document.getElementById('dashboard-hero-chart');
+  if (hero) {
+    const chart = hero.querySelector('.dashboard-hero-chart');
+    if (chart) chart.innerHTML = buildUsageAreaChart((overview.sessions || []).map((_, index) => 12 + index * 4).concat([20, 28, 24, 32, 30, 38]));
+  }
 }
 
 function renderEvents(items) {
-  renderListInto('events-list', items, item => card(`${item.kind}`, `${item.at || 'n/a'} ← ${item.source}`));
+  renderListInto('events-list', items, item => buildTimelineItem(item));
   renderLogsPremium(items);
 }
 
@@ -327,7 +399,9 @@ function renderAgentsPage(agents, sessions, processes) {
       controls.push(actionButton('Kill Process', () => handleProcessKill(runningProcess.process_id), 'danger'));
     }
     controls.push(actionButton('Inspect Agent', () => renderAgentDetail(agent, sessions)));
-    return card(`${agent.agent_id} · ${agent.status}`, `${agent.role || 'worker'} · last seen ${agent.last_seen_at || 'n/a'}`, controls);
+    const cardNode = card(`${agent.agent_id} · ${agent.status}`, `${agent.role || 'worker'} · last seen ${agent.last_seen_at || 'n/a'}`, controls);
+    cardNode.classList.add('agent-list-row');
+    return cardNode;
   }, 'No agents yet');
   renderAgentDetail(selectedAgent, sessions);
 }
@@ -356,12 +430,17 @@ function renderAgentDetail(agent, sessions) {
     });
   }
   setText('agents-page-detail', JSON.stringify(agent, null, 2));
-  renderListInto('agents-page-sessions', relatedSessions, item => card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Open Session', async () => {
-    activeSessionId = item.session_id;
-    await loadSessionDetail(item.session_id);
-    await loadChatTranscript(item.session_id);
-    openChatStream(item.session_id);
-  })]), 'No sessions for this agent.');
+  document.getElementById('agents-page-detail')?.classList.add('agent-detail-card');
+  renderListInto('agents-page-sessions', relatedSessions, item => {
+    const node = card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Open Session', async () => {
+      activeSessionId = item.session_id;
+      await loadSessionDetail(item.session_id);
+      await loadChatTranscript(item.session_id);
+      openChatStream(item.session_id);
+    })]);
+    node.classList.add('agent-session-table');
+    return node;
+  }, 'No sessions for this agent.');
 }
 
 async function loadSessionDetail(sessionId) {
@@ -388,12 +467,16 @@ function renderSessionsPremium(items) {
       statsRoot.appendChild(block);
     });
   }
-  renderListInto('sessions-list', items, item => card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Inspect', async () => {
-    activeSessionId = item.session_id;
-    await loadSessionDetail(item.session_id);
-    await loadChatTranscript(item.session_id);
-    openChatStream(item.session_id);
-  })]));
+  renderListInto('sessions-list', items, item => {
+    const node = card(`${item.session_id} · ${item.status}`, `${item.platform || item.source || 'unknown'} · ${item.title || 'Untitled'}`, [actionButton('Inspect', async () => {
+      activeSessionId = item.session_id;
+      await loadSessionDetail(item.session_id);
+      await loadChatTranscript(item.session_id);
+      openChatStream(item.session_id);
+    })]);
+    node.classList.add('session-list-row');
+    return node;
+  });
   renderListInto('sessions-related-transcript', [], () => null, 'Inspect a session to load transcript preview.');
 }
 
@@ -544,6 +627,10 @@ function renderUsagePage(payload) {
   const performance = payload.performance || {};
   const loadSmoke = payload.load_smoke || {};
   const summaryCards = payload.summary_cards || [];
+  const usageChart = document.getElementById('usage-main-chart');
+  if (usageChart) {
+    usageChart.innerHTML = buildUsageAreaChart(agentBreakdown.map((item, index) => Number(item.total_tokens || 0) / 1000 || (index + 1) * 6));
+  }
   renderListInto('usage-list', [
     ['Total Tokens', String(totals.total_tokens || 0)],
     ['Actual Cost USD', String(totals.actual_cost_usd || 0)],
@@ -552,7 +639,27 @@ function renderUsagePage(payload) {
     ['Route Count', String(performance.snapshot?.route_count || 0)],
     ['Load Smoke Failures', String(loadSmoke.failures || 0)],
   ], ([label, value]) => card(label, value));
-  renderListInto('usage-agent-breakdown', agentBreakdown, item => card(`${item.agent_id} · ${item.session_count} session(s)`, `${item.total_tokens} tokens · $${item.actual_cost_usd || 0}`, [actionButton('Inspect Agent', () => setText('usage-detail', JSON.stringify({ agent: item, top_sessions: topSessions }, null, 2)))]), 'No agent usage yet');
+  renderListInto('usage-agent-breakdown', agentBreakdown, item => {
+    const share = Number(item.total_tokens || 0);
+    const total = Number(totals.total_tokens || 0);
+    const wrap = document.createElement('li');
+    wrap.className = 'item-card';
+    wrap.innerHTML = `<div class="item-title">${item.agent_id} · ${item.session_count} session(s)</div><div class="item-meta">${item.total_tokens} tokens · $${item.actual_cost_usd || 0}</div>${buildProgressBar(share, total || 1, share > total * 0.5 ? 'warn' : 'ok')}`;
+    const row = document.createElement('div');
+    row.className = 'actions-row';
+    row.appendChild(actionButton('Inspect Agent', () => setText('usage-detail', JSON.stringify({ agent: item, top_sessions: topSessions }, null, 2))));
+    wrap.appendChild(row);
+    return wrap;
+  }, 'No agent usage yet');
+  const shareRoot = clearRoot('usage-agent-share-bar');
+  if (shareRoot) {
+    agentBreakdown.slice(0, 4).forEach(item => {
+      const lane = document.createElement('div');
+      lane.className = 'usage-agent-share-lane';
+      lane.innerHTML = `<span class="usage-agent-share-label">${item.agent_id}</span>${buildProgressBar(item.total_tokens || 0, totals.total_tokens || 1, (item.total_tokens || 0) > (totals.total_tokens || 0) * 0.5 ? 'warn' : 'ok')}`;
+      shareRoot.appendChild(lane);
+    });
+  }
   renderListInto('usage-top-sessions', topSessions, item => card(`${item.session_id} · ${item.title || 'Untitled'}`, `${item.total_tokens || (Number(item.input_tokens || 0) + Number(item.output_tokens || 0) + Number(item.reasoning_tokens || 0))} tokens · $${item.actual_cost_usd || 0}`, [actionButton('Inspect Session', () => setText('usage-detail', JSON.stringify(item, null, 2)))]), 'No sessions yet');
   const statGrid = clearRoot('usage-stat-grid');
   if (statGrid) {
@@ -560,10 +667,7 @@ function renderUsagePage(payload) {
       statGrid.textContent = 'No summary cards yet';
     } else {
       summaryCards.forEach(cardItem => {
-        const block = document.createElement('div');
-        block.className = `usage-stat-card ${(cardItem.tone || 'neutral')}`;
-        block.innerHTML = `<div class="usage-stat-label">${cardItem.label}</div><div class="usage-stat-value">${cardItem.value}</div>`;
-        statGrid.appendChild(block);
+        statGrid.insertAdjacentHTML('beforeend', buildStatCard(cardItem.label, cardItem.value, cardItem.tone || 'neutral'));
       });
     }
   }
@@ -723,9 +827,18 @@ async function fetchOverview() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  document.documentElement.setAttribute('data-theme', 'premium');
   restoreShellPreferences();
   renderCurrentPage();
+  decoratePrimaryActions();
+  const updateClock = () => {
+    const now = new Date();
+    setText('topbar-clock', `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')} UTC`);
+  };
+  updateClock();
+  window.setInterval(updateClock, 1000);
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+  document.getElementById('sidebar-collapse-button')?.addEventListener('click', toggleSidebar);
   document.getElementById('global-search').addEventListener('input', event => filterSidebar(event.target.value));
   document.getElementById('gateway-runtime-button').addEventListener('click', () => handleGatewayRuntimeAction().catch(error => setText('gateway-runtime-status', error.message)));
   document.getElementById('activity-load-more').addEventListener('click', () => {
