@@ -322,24 +322,26 @@
           <article><div class="panel-header"><h2>API's</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
         </section>
 
-        <section id="channels-page-section" class="page-section grid panels" data-page="channels">
+        <section id="channels-page-section" class="page-section grid panels split-view channels-split-view" data-page="channels">
           <article>
             <div class="panel-header"><h2>Channels Page</h2><p id="channels-page-summary" class="panel-caption">Loading gateway and channel status…</p></div>
-            <ul id="channels-page-list" class="item-list"></ul>
+            <div id="channels-summary-grid" class="usage-stat-grid channels-summary-grid"></div>
+            <ul id="channels-page-list" class="item-list channel-platform-pill"></ul>
           </article>
-          <article><div class="panel-header"><h2>Channel Detail</h2></div><pre id="channels-page-detail">Loading channel details.</pre></article>
+          <article class="channels-detail-card"><div class="panel-header"><h2>Channel Detail</h2></div><pre id="channels-page-detail">Loading channel details.</pre></article>
         </section>
 
         <section id="hooks-page-section" class="page-section grid panels" data-page="hooks">
           <article><div class="panel-header"><h2>Segurança Hooks</h2></div><div class="placeholder-card">Página ainda não populada.</div></article>
         </section>
 
-        <section id="preferences-page-section" class="page-section grid panels" data-page="preferences">
+        <section id="preferences-page-section" class="page-section grid panels split-view profiles-split-view" data-page="preferences">
           <article>
             <div class="panel-header"><h2>Profiles Page</h2><p id="profiles-page-summary" class="panel-caption">Loading profile rules…</p></div>
-            <ul id="profiles-page-list" class="item-list"></ul>
+            <div id="profiles-summary-grid" class="usage-stat-grid profiles-summary-grid"></div>
+            <ul id="profiles-page-list" class="item-list profile-sensitivity-pill"></ul>
           </article>
-          <article><div class="panel-header"><h2>Profile Detail</h2></div><pre id="profiles-page-detail">Loading profile details.</pre></article>
+          <article class="profiles-detail-card"><div class="panel-header"><h2>Profile Detail</h2></div><pre id="profiles-page-detail">Loading profile details.</pre></article>
         </section>
 
         <section id="doctor-page-section" class="page-section grid panels" data-page="doctor">
@@ -351,12 +353,13 @@
           <article><div class="panel-header"><h2>Doctor Detail</h2></div><pre id="doctor-detail">Loading doctor data.</pre></article>
         </section>
 
-        <section id="terminal-policy-section" class="page-section grid panels" data-page="terminal">
-          <article>
+        <section id="terminal-policy-section" class="page-section grid panels split-view terminal-split-view" data-page="terminal">
+          <article class="terminal-policy-card">
             <div class="panel-header"><h2>Terminal Strategy</h2><p id="terminal-policy-summary" class="panel-caption">Loading terminal risk posture…</p></div>
-            <ul id="terminal-policy-list" class="item-list"></ul>
+            <div id="terminal-summary-grid" class="usage-stat-grid terminal-summary-grid"></div>
+            <ul id="terminal-policy-list" class="item-list terminal-mode-pill"></ul>
           </article>
-          <article><div class="panel-header"><h2>Terminal Policy Detail</h2></div><pre id="terminal-policy-detail">Loading terminal policy details.</pre></article>
+          <article class="terminal-policy-card"><div class="panel-header"><h2>Terminal Policy Detail</h2></div><pre id="terminal-policy-detail">Loading terminal policy details.</pre></article>
         </section>
 
         <section id="logs-page-section" class="page-section grid panels" data-page="logs">

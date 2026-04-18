@@ -366,6 +366,10 @@ def test_terminal_strategy_page_is_served_with_risk_posture_panels():
     assert 'terminal-policy-summary' in body
     assert 'terminal-policy-list' in body
     assert 'terminal-policy-detail' in body
+    assert 'split-view terminal-split-view' in body
+    assert 'terminal-summary-grid' in body
+    assert 'terminal-mode-pill' in body
+    assert 'terminal-policy-card' in body
 
 
 def test_memory_page_is_served_with_summary_and_detail_panels():
@@ -437,6 +441,10 @@ def test_profiles_page_is_served_with_reauth_panels():
     assert 'Profiles Page' in body
     assert 'profiles-page-list' in body
     assert 'profiles-page-detail' in body
+    assert 'split-view profiles-split-view' in body
+    assert 'profiles-summary-grid' in body
+    assert 'profile-sensitivity-pill' in body
+    assert 'profiles-detail-card' in body
 
 
 def test_channels_page_is_served_with_gateway_panels():
@@ -452,6 +460,10 @@ def test_channels_page_is_served_with_gateway_panels():
     assert 'Channels Page' in body
     assert 'channels-page-list' in body
     assert 'channels-page-detail' in body
+    assert 'split-view channels-split-view' in body
+    assert 'channels-summary-grid' in body
+    assert 'channel-platform-pill' in body
+    assert 'channels-detail-card' in body
 
 
 def test_usage_page_is_served_with_operational_panels():
@@ -652,9 +664,15 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderProfilesPage' in body
     assert '/ops/profiles' in body
     assert 'profiles-page-list' in body
+    assert 'profiles-summary-grid' in body
+    assert 'profile-sensitivity-pill' in body
+    assert 'profiles-detail-card' in body
     assert 'renderChannelsPage' in body
     assert '/ops/gateway' in body
     assert 'channels-page-list' in body
+    assert 'channels-summary-grid' in body
+    assert 'channel-platform-pill' in body
+    assert 'channels-detail-card' in body
     assert 'sidebar-toggle' in body
     assert 'global-search' in body
     assert '/ops/gateway-runtime' in body
@@ -734,6 +752,12 @@ def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():
     assert '.activity-summary-stat' in body
     assert '.memory-summary-grid' in body
     assert '.document-path-chip' in body
+    assert '.profiles-summary-grid' in body
+    assert '.profile-sensitivity-pill' in body
+    assert '.channels-summary-grid' in body
+    assert '.channel-platform-pill' in body
+    assert '.terminal-summary-grid' in body
+    assert '.terminal-mode-pill' in body
     assert '@media (max-width: 1180px)' in body
     assert '@media (max-width: 900px)' in body
     assert '.page-toolbar-actions' in body

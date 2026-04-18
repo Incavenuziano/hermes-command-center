@@ -537,13 +537,32 @@ function renderCronPage(jobs, historyItems) {
 }
 
 function renderTerminalPolicyPage(policy) {
+  const summaryRoot = clearRoot('terminal-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Mode', policy.mode || 'unknown'],
+      ['Interactive', policy.interactive_terminal_enabled ? 'enabled' : 'disabled'],
+      ['Risk', policy.risk_posture || 'unknown'],
+      ['Revisit', policy.revisit_in_milestone || 'unspecified'],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card terminal-summary-stat';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
   renderListInto('terminal-policy-list', [
     ['Mode', policy.mode || 'unknown'],
     ['Interactive Terminal', policy.interactive_terminal_enabled ? 'enabled' : 'disabled'],
     ['Risk Posture', policy.risk_posture || 'unknown'],
     ['Revisit', policy.revisit_in_milestone || 'unspecified'],
-  ], ([label, value]) => card(label, value));
+  ], ([label, value]) => {
+    const node = card(label, value);
+    node.insertAdjacentHTML('afterbegin', `<div class="terminal-card-head">${buildScopePill(label, 'neutral', 'terminal-mode-pill')}</div>`);
+    return node;
+  });
   setText('terminal-policy-summary', `${policy.mode || 'unknown'} · ${policy.risk_posture || 'unknown'}`);
+  document.getElementById('terminal-policy-detail')?.classList.add('terminal-policy-card');
   setText('terminal-policy-detail', JSON.stringify(policy, null, 2));
 }
 
@@ -761,15 +780,53 @@ function renderFilesPage(payload) {
 
 function renderProfilesPage(payload) {
   const items = payload.items || [];
-  renderListInto('profiles-page-list', items, item => card(item.label || item.id, `${item.sensitivity} · reauth ${item.requires_reauth ? 'yes' : 'no'}`, [actionButton('Inspect', () => setText('profiles-page-detail', JSON.stringify(item, null, 2)))]), 'No profiles yet');
+  const summaryRoot = clearRoot('profiles-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Profiles', String(payload.count || items.length)],
+      ['Active', payload.active_profile_id || 'none'],
+      ['High Sensitivity', String(items.filter(item => item.sensitivity === 'high').length)],
+      ['Reauth', String(items.filter(item => item.requires_reauth).length)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card profiles-summary-stat';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
+  renderListInto('profiles-page-list', items, item => {
+    const node = card(item.label || item.id, `${item.sensitivity} · reauth ${item.requires_reauth ? 'yes' : 'no'}`, [actionButton('Inspect', () => setText('profiles-page-detail', JSON.stringify(item, null, 2)))]);
+    node.insertAdjacentHTML('afterbegin', `<div class="profile-card-head">${buildScopePill(item.sensitivity || 'standard', item.sensitivity === 'high' ? 'accent' : 'neutral', 'profile-sensitivity-pill')}</div>`);
+    return node;
+  }, 'No profiles yet');
   setText('profiles-page-summary', `active ${payload.active_profile_id || 'none'} · ${payload.count || items.length} profile(s)`);
+  document.getElementById('profiles-page-detail')?.classList.add('profiles-detail-card');
   setText('profiles-page-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No profile selected.');
 }
 
 function renderChannelsPage(payload) {
   const items = payload.channels || [];
-  renderListInto('channels-page-list', items, item => card(item.label || item.id, `${item.platform || 'unknown'} · ${item.delivery_state || 'unknown'}`, [actionButton('Inspect', () => setText('channels-page-detail', JSON.stringify({ gateway: payload.gateway, channel: item }, null, 2)))]), 'No channels yet');
+  const summaryRoot = clearRoot('channels-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Channels', String(payload.count || items.length)],
+      ['Gateway', payload.gateway?.status || 'unknown'],
+      ['Platforms', String(new Set(items.map(item => item.platform || 'unknown')).size)],
+      ['Connected', String(items.filter(item => item.delivery_state === 'connected').length)],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card channels-summary-stat';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
+  renderListInto('channels-page-list', items, item => {
+    const node = card(item.label || item.id, `${item.platform || 'unknown'} · ${item.delivery_state || 'unknown'}`, [actionButton('Inspect', () => setText('channels-page-detail', JSON.stringify({ gateway: payload.gateway, channel: item }, null, 2)))]);
+    node.insertAdjacentHTML('afterbegin', `<div class="channel-card-head">${buildScopePill(item.platform || 'unknown', item.delivery_state === 'connected' ? 'accent' : 'neutral', 'channel-platform-pill')}</div>`);
+    return node;
+  }, 'No channels yet');
   setText('channels-page-summary', `${payload.gateway?.status || 'unknown'} gateway · ${payload.count || items.length} channel(s)`);
+  document.getElementById('channels-page-detail')?.classList.add('channels-detail-card');
   setText('channels-page-detail', JSON.stringify(items.length ? { gateway: payload.gateway, channel: items[0] } : payload.gateway || {}, null, 2));
 }
 
