@@ -145,10 +145,10 @@
           </article>
         </section>
 
-        <section id="activity-page-section" class="page-section grid panels" data-page="activity">
-          <article>
+        <section id="activity-page-section" class="page-section grid panels split-view activity-split-view" data-page="activity">
+          <article class="activity-feed-card">
             <div class="panel-header"><h2>Activity Page</h2><p id="activity-window-summary" class="panel-caption">Loading activity timeline…</p></div>
-            <div id="activity-summary-grid" class="usage-stat-grid"></div>
+            <div id="activity-summary-grid" class="usage-stat-grid activity-summary-stat"></div>
             <div id="activity-filter-bar" class="actions-row">
               <button id="activity-filter-all" type="button" class="action-button ghost">All</button>
               <button id="activity-filter-approvals" type="button" class="action-button ghost">Approvals</button>
@@ -157,9 +157,9 @@
             <ul id="activity-page-list" class="item-list"></ul>
             <div class="actions-row"><button id="activity-load-more" type="button" class="action-button">Load More Activity</button></div>
           </article>
-          <article>
+          <article class="activity-detail-card">
             <div class="panel-header"><h2>Activity Drill-Down</h2></div>
-            <pre id="activity-drilldown">Select an activity item to inspect details.</pre>
+            <pre id="activity-drilldown" class="activity-detail-card">Select an activity item to inspect details.</pre>
           </article>
         </section>
 
@@ -296,20 +296,22 @@
           </article>
         </section>
 
-        <section id="memory-page-section" class="page-section grid panels" data-page="memory">
+        <section id="memory-page-section" class="page-section grid panels split-view memory-split-view" data-page="memory">
           <article>
             <div class="panel-header"><h2>Memory Page</h2><p id="memory-page-summary" class="panel-caption">Loading memory summaries…</p></div>
-            <ul id="memory-page-list" class="item-list"></ul>
+            <div id="memory-summary-grid" class="usage-stat-grid memory-summary-grid"></div>
+            <ul id="memory-page-list" class="item-list memory-scope-pill"></ul>
           </article>
-          <article><div class="panel-header"><h2>Memory Detail</h2></div><pre id="memory-page-detail">Loading memory details.</pre></article>
+          <article class="memory-detail-card"><div class="panel-header"><h2>Memory Detail</h2></div><pre id="memory-page-detail">Loading memory details.</pre></article>
         </section>
 
-        <section id="documents-page-section" class="page-section grid panels" data-page="documents">
+        <section id="documents-page-section" class="page-section grid panels split-view documents-split-view" data-page="documents">
           <article>
             <div class="panel-header"><h2>Files Page</h2><p id="files-page-summary" class="panel-caption">Loading workspace files…</p></div>
-            <ul id="files-page-list" class="item-list"></ul>
+            <div id="documents-summary-grid" class="usage-stat-grid documents-summary-grid"></div>
+            <ul id="files-page-list" class="item-list document-path-chip"></ul>
           </article>
-          <article><div class="panel-header"><h2>File Detail</h2></div><pre id="files-page-detail">Loading file details.</pre></article>
+          <article class="files-detail-card"><div class="panel-header"><h2>File Detail</h2></div><pre id="files-page-detail">Loading file details.</pre></article>
         </section>
 
         <section id="database-page-section" class="page-section grid panels" data-page="database">

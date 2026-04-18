@@ -543,6 +543,59 @@ pre { white-space: pre-wrap; word-break: break-word; }
 .agent-detail-card {
   border-color: rgba(125, 92, 255, 0.10);
 }
+.activity-split-view,
+.memory-split-view,
+.documents-split-view {
+  align-items: start;
+}
+.activity-feed-card,
+.activity-detail-card,
+.memory-detail-card,
+.files-detail-card {
+  border-color: rgba(125, 92, 255, 0.10);
+}
+.activity-summary-stat,
+.memory-summary-grid .usage-stat-card,
+.documents-summary-grid .usage-stat-card {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.07);
+}
+.activity-feed-meta,
+.memory-item-head,
+.document-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.memory-scope-pill,
+.activity-kind-pill,
+.document-path-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(208, 176, 106, 0.20);
+  background: rgba(208, 176, 106, 0.08);
+  color: var(--text);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.memory-scope-pill.accent,
+.activity-kind-pill.accent,
+.document-path-chip.accent {
+  border-color: rgba(125, 92, 255, 0.24);
+  background: rgba(125, 92, 255, 0.12);
+}
+.document-path-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .chat-message-tool {
   margin-top: 8px;
   padding: 8px 10px;

@@ -256,6 +256,10 @@ function buildTimelineItem(item) {
   return li;
 }
 
+function buildScopePill(text, tone = 'neutral', className = 'memory-scope-pill') {
+  return `<span class="${className} ${tone}">${text}</span>`;
+}
+
 async function loadChatTranscript(sessionId) {
   const payload = await fetchJson(`/ops/chat/transcript?session_id=${encodeURIComponent(sessionId)}`);
   setChatSummary(payload.data.session, payload.data.count || 0);
@@ -341,12 +345,23 @@ function renderActivityPage(items, retention) {
       ['Process Events', String(items.filter(item => (item.kind || '').startsWith('process')).length)],
     ].forEach(([label, value]) => {
       const block = document.createElement('div');
-      block.className = 'usage-stat-card';
+      block.className = 'usage-stat-card activity-summary-stat';
       block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
       summaryRoot.appendChild(block);
     });
   }
-  renderListInto('activity-page-list', items, item => card(`${item.at || 'n/a'} · ${item.kind}`, `${item.source || 'unknown'}`, [actionButton('Inspect Event', () => setText('activity-drilldown', JSON.stringify(item, null, 2)))]), 'No activity events yet');
+  renderListInto('activity-page-list', items, item => {
+    const node = buildTimelineItem(item);
+    node.classList.add('activity-feed-card');
+    node.insertAdjacentHTML('afterbegin', `<div class="activity-feed-meta">${buildScopePill(item.kind || 'event', 'neutral', 'activity-kind-pill')}</div>`);
+    const actions = document.createElement('div');
+    actions.className = 'actions-row';
+    actions.appendChild(actionButton('Inspect Event', () => setText('activity-drilldown', JSON.stringify(item, null, 2))));
+    node.appendChild(actions);
+    return node;
+  }, 'No activity events yet');
+  const drilldown = document.getElementById('activity-drilldown');
+  drilldown?.classList.add('activity-detail-card');
   setText('activity-drilldown', items.length ? JSON.stringify(items[0], null, 2) : 'No activity item selected.');
 }
 
@@ -534,9 +549,29 @@ function renderTerminalPolicyPage(policy) {
 
 function renderMemoryPage(payload) {
   const items = payload.items || [];
-  renderListInto('memory-page-list', items, item => card(`${item.scope}`, item.preview || item.text, [actionButton('Inspect', () => setText('memory-page-detail', JSON.stringify(item, null, 2)))]), 'No memory entries yet');
   const counts = payload.counts || {};
+  const summaryRoot = clearRoot('memory-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Memory', String(counts.memory || 0)],
+      ['User', String(counts.user || 0)],
+      ['Visible', String(items.length)],
+      ['Freshest', items[0]?.updated_at || 'n/a'],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card memory-summary-stat';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
+  renderListInto('memory-page-list', items, item => {
+    const node = card(`${item.scope}`, item.preview || item.text, [actionButton('Inspect', () => setText('memory-page-detail', JSON.stringify(item, null, 2)))]);
+    node.insertAdjacentHTML('afterbegin', `<div class="memory-item-head">${buildScopePill(item.scope || 'memory', item.scope === 'user' ? 'accent' : 'neutral')}</div>`);
+    return node;
+  }, 'No memory entries yet');
   setText('memory-page-summary', `${counts.memory || 0} memory / ${counts.user || 0} user entries`);
+  const detailNode = document.getElementById('memory-page-detail');
+  detailNode?.classList.add('memory-detail-card');
   setText('memory-page-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No memory entry selected.');
 }
 
@@ -699,8 +734,28 @@ async function requestUsageCircuitBreakerUpdate() {
 
 function renderFilesPage(payload) {
   const items = payload.items || [];
-  renderListInto('files-page-list', items, item => card(item.path, item.preview, [actionButton('Inspect', () => setText('files-page-detail', JSON.stringify(item, null, 2)))]), 'No files yet');
+  const summaryRoot = clearRoot('documents-summary-grid');
+  if (summaryRoot) {
+    [
+      ['Files', String(payload.count || items.length)],
+      ['Workspace', payload.root || 'n/a'],
+      ['Largest', items.length ? `${Math.max(...items.map(item => Number(item.size_bytes || 0)))} B` : '0 B'],
+      ['First Path', items[0]?.path || 'n/a'],
+    ].forEach(([label, value]) => {
+      const block = document.createElement('div');
+      block.className = 'usage-stat-card documents-summary-stat';
+      block.innerHTML = `<div class="usage-stat-label">${label}</div><div class="usage-stat-value">${value}</div>`;
+      summaryRoot.appendChild(block);
+    });
+  }
+  renderListInto('files-page-list', items, item => {
+    const node = card(item.path, item.preview, [actionButton('Inspect', () => setText('files-page-detail', JSON.stringify(item, null, 2)))]);
+    node.insertAdjacentHTML('afterbegin', `<div class="document-card-head">${buildScopePill(item.path || 'file', 'neutral', 'document-path-chip')}</div>`);
+    return node;
+  }, 'No files yet');
   setText('files-page-summary', `${payload.count || items.length} file(s)`);
+  const fileDetailNode = document.getElementById('files-page-detail');
+  fileDetailNode?.classList.add('files-detail-card');
   setText('files-page-detail', items.length ? JSON.stringify(items[0], null, 2) : 'No file selected.');
 }
 

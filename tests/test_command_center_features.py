@@ -328,6 +328,10 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
     assert 'Load More Activity' in body
     assert 'activity-filter-bar' in body
     assert 'activity-summary-grid' in body
+    assert 'split-view activity-split-view' in body
+    assert 'activity-feed-card' in body
+    assert 'activity-summary-stat' in body
+    assert 'activity-detail-card' in body
 
 
 def test_processes_page_is_served_with_registry_and_detail_panels():
@@ -377,6 +381,10 @@ def test_memory_page_is_served_with_summary_and_detail_panels():
     assert 'Memory Page' in body
     assert 'memory-page-list' in body
     assert 'memory-page-detail' in body
+    assert 'split-view memory-split-view' in body
+    assert 'memory-summary-grid' in body
+    assert 'memory-scope-pill' in body
+    assert 'memory-detail-card' in body
 
 
 def test_skills_page_is_served_with_browser_panels():
@@ -410,6 +418,10 @@ def test_files_page_is_served_with_workspace_browser_panels():
     assert 'Files Page' in body
     assert 'files-page-list' in body
     assert 'files-page-detail' in body
+    assert 'split-view documents-split-view' in body
+    assert 'documents-summary-grid' in body
+    assert 'document-path-chip' in body
+    assert 'files-detail-card' in body
 
 
 def test_profiles_page_is_served_with_reauth_panels():
@@ -588,6 +600,9 @@ def test_frontend_javascript_bundle_is_served():
     assert 'activity-load-more' in body
     assert 'activity-filter-bar' in body
     assert 'activity-summary-grid' in body
+    assert 'activity-feed-card' in body
+    assert 'activity-summary-stat' in body
+    assert 'activity-detail-card' in body
     assert 'renderProcessesPage' in body
     assert '/ops/processes' in body
     assert '/ops/processes/control' in body
@@ -606,6 +621,9 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderMemoryPage' in body
     assert '/ops/memory' in body
     assert 'memory-page-list' in body
+    assert 'memory-summary-grid' in body
+    assert 'memory-scope-pill' in body
+    assert 'memory-detail-card' in body
     assert 'renderSkillsPage' in body
     assert '/ops/skills' in body
     assert 'skills-page-list' in body
@@ -628,6 +646,9 @@ def test_frontend_javascript_bundle_is_served():
     assert 'renderFilesPage' in body
     assert '/ops/files' in body
     assert 'files-page-list' in body
+    assert 'documents-summary-grid' in body
+    assert 'document-path-chip' in body
+    assert 'files-detail-card' in body
     assert 'renderProfilesPage' in body
     assert '/ops/profiles' in body
     assert 'profiles-page-list' in body
@@ -709,6 +730,10 @@ def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():
     assert '.hc-panel' in body
     assert '.hc-feed-item' in body
     assert '.hc-split' in body or '.split-view' in body
+    assert '.activity-split-view' in body
+    assert '.activity-summary-stat' in body
+    assert '.memory-summary-grid' in body
+    assert '.document-path-chip' in body
     assert '@media (max-width: 1180px)' in body
     assert '@media (max-width: 900px)' in body
     assert '.page-toolbar-actions' in body
