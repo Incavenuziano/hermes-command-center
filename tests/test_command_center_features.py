@@ -232,9 +232,9 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'Conhecimento' in body
     assert 'Sistema' in body
     assert 'Dashboard' in body
-    assert 'Usage' in body
+    assert 'Uso' in body
     assert 'Conversar' in body
-    assert 'Calendario' in body
+    assert 'Calendário' in body
     assert 'API&#x27;s' in body or 'API\'s' in body or 'API’s' in body or 'API&apos;s' in body
     assert 'sidebar-brand-mark' in body
     assert 'command-center' in body
@@ -277,7 +277,7 @@ def test_agents_page_is_served_with_same_frontend_shell():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Agents Page' in body
+    assert 'Agentes' in body
     assert 'agents-page-list' in body
     assert 'agents-page-detail' in body
     assert 'agents-page-stats' in body
@@ -299,7 +299,7 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Cron Page' in body
+    assert 'Crons' in body
     assert 'cron-page-list' in body
     assert 'cron-run-history' in body
     assert 'cron-output-inspection' in body
@@ -321,11 +321,11 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Activity Page' in body
+    assert 'Atividade' in body
     assert 'activity-page-list' in body
     assert 'activity-drilldown' in body
     assert 'activity-window-summary' in body
-    assert 'Load More Activity' in body
+    assert 'Carregar mais atividade' in body
     assert 'activity-filter-bar' in body
     assert 'activity-summary-grid' in body
     assert 'split-view activity-split-view' in body
@@ -345,7 +345,7 @@ def test_processes_page_is_served_with_registry_and_detail_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Processes Page' in body
+    assert 'Processos' in body
     assert 'processes-page-list' in body
     assert 'processes-page-detail' in body
     assert 'processes-page-summary' in body
@@ -362,7 +362,7 @@ def test_terminal_strategy_page_is_served_with_risk_posture_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Terminal Strategy' in body
+    assert 'Terminal' in body
     assert 'terminal-policy-summary' in body
     assert 'terminal-policy-list' in body
     assert 'terminal-policy-detail' in body
@@ -382,7 +382,7 @@ def test_memory_page_is_served_with_summary_and_detail_panels():
         server.server_close()
 
     assert status == 200
-    assert 'Memory Page' in body
+    assert 'Memória' in body
     assert 'memory-page-list' in body
     assert 'memory-page-detail' in body
     assert 'split-view memory-split-view' in body
@@ -401,7 +401,7 @@ def test_skills_page_is_served_with_browser_panels():
         server.server_close()
 
     assert status == 200
-    assert 'Skills Page' in body
+    assert 'Catálogo de skills' in body
     assert 'skills-page-list' in body
     assert 'skills-page-detail' in body
     assert 'HCC-design-advisor' in body
@@ -419,7 +419,7 @@ def test_files_page_is_served_with_workspace_browser_panels():
         server.server_close()
 
     assert status == 200
-    assert 'Files Page' in body
+    assert 'Arquivos' in body
     assert 'files-page-list' in body
     assert 'files-page-detail' in body
     assert 'split-view documents-split-view' in body
@@ -438,7 +438,7 @@ def test_profiles_page_is_served_with_reauth_panels():
         server.server_close()
 
     assert status == 200
-    assert 'Profiles Page' in body
+    assert 'Perfis' in body
     assert 'profiles-page-list' in body
     assert 'profiles-page-detail' in body
     assert 'split-view profiles-split-view' in body
@@ -457,7 +457,7 @@ def test_channels_page_is_served_with_gateway_panels():
         server.server_close()
 
     assert status == 200
-    assert 'Channels Page' in body
+    assert 'Canais' in body
     assert 'channels-page-list' in body
     assert 'channels-page-detail' in body
     assert 'split-view channels-split-view' in body
@@ -477,7 +477,7 @@ def test_usage_page_is_served_with_operational_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Usage' in body
+    assert 'Uso' in body
     assert 'usage-summary' in body
     assert 'usage-list' in body
     assert 'usage-detail' in body
@@ -492,18 +492,18 @@ def test_usage_page_is_served_with_operational_panels():
 
 def test_new_navigation_placeholder_routes_are_served():
     expected = {
-        '/usage': 'Usage',
+        '/usage': 'Uso',
         '/chat': 'Conversar',
         '/sessions': 'Sessões',
         '/tasks': 'Tarefas',
-        '/calendar': 'Calendario',
+        '/calendar': 'Calendário',
         '/integrations': 'Integrações',
-        '/skill': 'Skill',
+        '/skill': 'Skills',
         '/database': 'DataBase',
         '/apis': 'API',
         '/hooks': 'Segurança Hooks',
-        '/preferences': 'Preferencias',
-        '/doctor': 'Doctor',
+        '/preferences': 'Preferências',
+        '/doctor': 'Diagnóstico',
         '/logs': 'Logs',
         '/tailscale': 'Tailscale',
         '/config': 'Config',
@@ -692,6 +692,11 @@ def test_frontend_javascript_bundle_is_served():
     assert 'buildStatCard' in body
     assert 'buildSparkline' in body
     assert 'buildTimelineItem' in body
+    assert 'buildDetailSection' in body
+    assert 'buildKeyValueGrid' in body
+    assert 'buildMessageCard' in body
+    assert 'buildStatusTone' in body
+    assert 'buildMetricBar' in body
     assert 'sidebar-collapse-button' in body
     assert 'page-subtitle' in body
     assert 'dashboard-hero-chart' in body
@@ -714,8 +719,13 @@ def test_frontend_javascript_bundle_is_served():
     assert 'cron-split-view' in body
     assert 'cron-job-table' in body
     assert 'cron-output-terminal' in body
-    assert 'doctor-diagnostics-table' in body
-    assert 'logs-live-stream' in body
+    assert 'Skills Page' not in body
+    assert 'Usage Detail' not in body
+    assert 'Agents Page' not in body
+    assert 'Cron Page' not in body
+    assert 'Activity Page' not in body
+    assert 'Doctor Detail' not in body
+    assert 'Terminal Strategy' not in body
 
 
 def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():

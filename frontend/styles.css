@@ -629,6 +629,31 @@ pre { white-space: pre-wrap; word-break: break-word; }
   font-family: var(--font-mono);
   font-size: 11px;
 }
+
+.detail-surface {
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.025);
+  padding: 14px;
+  min-height: 96px;
+}
+.detail-card-shell { display: grid; gap: 14px; }
+.detail-section { display: grid; gap: 10px; }
+.detail-section h3 { margin: 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.detail-kv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin: 0; }
+.detail-kv-row { display: grid; gap: 4px; }
+.detail-kv-row dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.detail-kv-row dd { margin: 0; font-size: 14px; color: var(--text); }
+.detail-pill-row { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-right: 8px; margin-bottom: 8px; }
+.detail-pill-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.detail-hero-line { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.detail-hero-line strong { font-size: 18px; }
+.detail-hero-line span, .detail-meta-inline { color: var(--muted); font-size: 12px; }
+.detail-body-copy { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.metric-bar { display: grid; gap: 8px; }
+.metric-bar-head { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--muted); }
+.chat-inspector-card { display: grid; gap: 12px; }
+.chat-inspector-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .cron-job-table,
 .doctor-diagnostics-table,
 .logs-live-stream,
