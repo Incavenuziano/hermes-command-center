@@ -169,3 +169,49 @@ def app_js(handler) -> None:
 @route('GET', '/static/styles.css', allow=('GET',))
 def styles_css(handler) -> None:
     _send_file(handler, FRONTEND_DIR / 'styles.css', 'text/css; charset=utf-8')
+
+
+# Hermes modular frontend assets
+@route('GET', '/static/hermes/styles.css', allow=('GET',))
+def hermes_styles_css(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'styles.css', 'text/css; charset=utf-8')
+
+
+@route('GET', '/static/hermes/data.js', allow=('GET',))
+def hermes_data_js(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'data.js', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/icons.jsx', allow=('GET',))
+def hermes_icons_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'icons.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/primitives.jsx', allow=('GET',))
+def hermes_primitives_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'primitives.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/layout.jsx', allow=('GET',))
+def hermes_layout_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'layout.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/pages_a.jsx', allow=('GET',))
+def hermes_pages_a_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'pages_a.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/pages_b.jsx', allow=('GET',))
+def hermes_pages_b_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'pages_b.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/pages_c.jsx', allow=('GET',))
+def hermes_pages_c_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'pages_c.jsx', 'application/javascript; charset=utf-8')
+
+
+@route('GET', '/static/hermes/app.jsx', allow=('GET',))
+def hermes_app_jsx(handler) -> None:
+    _send_file(handler, FRONTEND_DIR / 'hermes' / 'app.jsx', 'application/javascript; charset=utf-8')
