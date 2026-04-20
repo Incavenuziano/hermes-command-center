@@ -61,7 +61,6 @@ Em termos práticos, faltam 5 frentes grandes:
 - indicador de saúde básica do gateway no topo
 
 #### Backend real já existe, mas frontend ainda não usa direito ou não usa
-- Approvals
 - Chat transcript / stream
 - Memory
 - Skills
@@ -74,6 +73,13 @@ Em termos práticos, faltam 5 frentes grandes:
 - System info
 - Cost controls / circuit breaker mutável
 - Cron history / cron control
+
+#### Backend real melhorou recentemente, mas o frontend oficial ainda não fechou o circuito
+- Approvals agora entram em `/ops/overview`, mas o Dashboard ainda não consome a fila real na UI
+- `system_health` agora entra em `/ops/overview`, mas o card do Dashboard ainda não deixou de ser parcialmente hardcoded
+- `/ops/usage` agora expõe um panel shape compatível com a UI, mas o frontend ainda mantém complementos sintéticos
+- `/runtime/cron/jobs` agora expõe `jobs` além de `items`, mas o detalhe da página de Crons ainda segue mockado
+- `/health/doctor` já normaliza `warn/err`, mas a página Doctor ainda não consome processos e system info reais por completo
 
 #### Ainda é placeholder puro no frontend
 - Tarefas
@@ -219,9 +225,11 @@ Dashboard ainda renderiza approvals mockados.
 ### Backend já existente
 - `GET /ops/approvals`
 - `POST /ops/approvals/resolve`
+- approvals pendentes agora também entram em `GET /ops/overview`
 
 ### O que falta
-- substituir array local por fetch real;
+- parar de depender do array mock local do Dashboard;
+- consumir a fila real vinda de `/ops/overview` ou `/ops/approvals`;
 - ações Approve / Deny reais;
 - feedback visual após resolução;
 - atualização via stream ou refetch;
@@ -255,9 +263,11 @@ Partes do card ainda são hardcoded (`runtime online`, `event bus online`, `cost
 - `/system/info`
 - `/ops/usage`
 - `/ops/gateway-runtime`
+- `system_health` agora também entra em `/ops/overview`
 
 ### O que falta
-- construir `systemHealth` a partir de contratos reais;
+- parar de usar partes hardcoded do card atual;
+- decidir se a fonte canônica do card será `/ops/overview.system_health` ou composição explícita de `/system/info` + `/health` + `/ops/usage`;
 - diferenciar `unknown`, `ok`, `warn`, `err`;
 - não inferir “healthy” sem fonte real.
 
@@ -382,12 +392,15 @@ O detail card ainda constrói parte do payload no frontend.
 ## F1. Remover séries horárias sintéticas
 
 ### Problema
-A série “hourly burn” ainda é sintetizada no frontend quando não existe série real pronta.
+A série “hourly burn” ainda é sintetizada no frontend quando não existe série real pronta. O backend já passou a expor um panel shape mais amigável para Usage, mas ainda não fornece uma série temporal canônica.
 
 ### O que falta
 Duas rotas possíveis:
 1. adicionar série temporal real no backend; ou
 2. remover o gráfico até existir dados reais confiáveis.
+
+Observação:
+- o panel shape recente em `/ops/usage` reduz o trabalho de adaptação no frontend para `today`, `breaker` e `agents`, mas não resolve o problema da série horária.
 
 ### Definição de pronto
 - nenhum gráfico temporal usa dados fictícios.
@@ -410,12 +423,13 @@ Duas rotas possíveis:
 ## F3. Comparativos e request counts precisam ser reais
 
 ### Problema
-Vários números auxiliares ainda são decorativos.
+Vários números auxiliares ainda são decorativos. O backend recente melhorou o shape de `today`/`breaker`/`agents`, mas ainda há campos que continuam sintéticos ou aproximados no frontend.
 
 ### O que falta
 - request count real do período;
 - comparativo real com janela anterior, se desejado;
-- ou remoção dos adornos sintéticos.
+- ou remoção dos adornos sintéticos;
+- revisar o uso de fallback para `requests` no panel shape e substituir por métrica canônica quando ela existir.
 
 ---
 
@@ -427,9 +441,10 @@ Vários números auxiliares ainda são decorativos.
 - `GET /ops/cron/history`
 - `GET /ops/cron/jobs`
 - `GET /runtime/cron/jobs`
+- `/runtime/cron/jobs` agora expõe `jobs` além de `items`
 
 ### Problema
-A lista principal é real, mas histórico e output são mockados.
+A lista principal é real e o shape ficou mais amigável para o frontend, mas histórico e output continuam mockados.
 
 ### O que falta
 - puxar histórico real por `job_id`;
@@ -576,7 +591,7 @@ Hoje `files_summary()` entrega preview curto. Para uma UX realmente funcional, p
 ## L1. Doctor precisa consumir `/system/info` real
 
 ### Problema
-Só os checks estão reais. O painel “System info” ainda não é derivado do contrato correto.
+Os checks já estão reais e o backend recente já normaliza melhor os status (`warn`/`err`). Mesmo assim, o painel “System info” ainda não é derivado do contrato correto.
 
 ### Backend já existente
 - `/system/info`
