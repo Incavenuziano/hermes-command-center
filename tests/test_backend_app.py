@@ -68,6 +68,7 @@ def test_health_endpoint_returns_contract_headers_and_request_id():
     csp = headers['Content-Security-Policy']
     assert 'default-src' in csp
     assert 'https://unpkg.com' in csp
+    assert "'unsafe-inline'" in csp
     assert "'unsafe-eval'" in csp
     assert 'https://fonts.googleapis.com' in csp
     assert 'https://fonts.gstatic.com' in csp
