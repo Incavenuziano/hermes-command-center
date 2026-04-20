@@ -5,6 +5,9 @@ from contracts.system import ComponentStatus, SystemComponent, SystemHealth, Sys
 from http_api import route
 
 
+_STATUS_MAP = {'degraded': 'warn', 'error': 'err'}
+
+
 @route('GET', '/health', allow=('GET',))
 def health(handler) -> None:
     health = SystemHealth(
@@ -60,10 +63,11 @@ def health_doctor(handler) -> None:
         details={'mode': 'local-skeleton', 'environment': ENV},
     )
     checks = [
-        {'name': comp.name, 'status': comp.status.value, 'detail': comp.detail}
+        {'name': comp.name, 'status': _STATUS_MAP.get(comp.status.value, comp.status.value), 'detail': comp.detail}
         for comp in [health.runtime, health.database, health.event_bus]
     ]
-    handler.send_data({'checks': checks, 'overall_status': health.overall_status.value})
+    data = {'checks': checks, 'overall_status': _STATUS_MAP.get(health.overall_status.value, health.overall_status.value)}
+    handler.send_panel_data(data)
 
 
 @route('POST', '/system/inspect', allow=('POST',))

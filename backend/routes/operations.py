@@ -1,13 +1,41 @@
 from __future__ import annotations
 
+from approvals import approvals_store
 from audit_log import audit_log_store
 from auth import auth_manager
+from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME
 from cron_history import cron_history_store
 from derived_state import derived_state_store
 from gateway_runtime import gateway_runtime_store
 from http_api import AuthenticationRequiredError, RequestValidationError, route
 from read_only_mode import read_only_mode_store
 from runtime_adapter import runtime_adapter
+
+
+_APPROVAL_RISK_BY_KIND = {'db.migrate': 'high', 'shell.run': 'low', 'file.edit': 'medium'}
+
+
+def _map_approval_for_panel(item: dict) -> dict:
+    return {
+        'id': item.get('id'),
+        'title': item.get('title'),
+        'kind': item.get('kind'),
+        'source': item.get('source'),
+        'at': item.get('created_at'),
+        'risk': _APPROVAL_RISK_BY_KIND.get(item.get('kind', ''), 'medium'),
+        'preview': item.get('summary', ''),
+        'choices': item.get('choices', []),
+    }
+
+
+def _system_health_panel() -> dict:
+    return {
+        'env': ENV,
+        'bind': f'{HOST}:{PORT}',
+        'auth': 'passkey + loopback' if AUTH_ENABLED else 'local-trusted',
+        'uptime': 'unknown',
+        'version': f'{SERVICE_NAME}/0.4',
+    }
 
 
 def _session_actor(handler, session_id: str) -> dict[str, str]:
@@ -59,7 +87,15 @@ def _require_not_read_only() -> None:
 @route('GET', '/ops/overview', allow=('GET',))
 def ops_overview(handler) -> None:
     _require_authenticated(handler)
-    handler.send_data(derived_state_store.overview())
+    overview = derived_state_store.overview()
+    pending = approvals_store.list_items()
+    overview['approvals'] = [
+        _map_approval_for_panel(item)
+        for item in pending.get('items', [])
+        if item.get('status') == 'pending'
+    ]
+    overview['system_health'] = _system_health_panel()
+    handler.send_panel_data(overview)
 
 
 @route('GET', '/ops/events', allow=('GET',))
@@ -183,7 +219,10 @@ def ops_cron_jobs(handler) -> None:
 def runtime_cron_jobs(handler) -> None:
     _require_authenticated(handler)
     jobs = runtime_adapter.list_cron_jobs()
-    handler.send_data({'items': jobs, 'count': len(jobs)})
+    handler.send_panel_data(
+        {'items': jobs, 'count': len(jobs)},
+        panel={'jobs': jobs, 'items': jobs, 'count': len(jobs)},
+    )
 
 
 @route('GET', '/ops/cron/jobs/cron-live-1', allow=('GET',))

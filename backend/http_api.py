@@ -185,6 +185,10 @@ class ApiHandler(BaseHTTPRequestHandler):
     def send_data(self, data: dict, status: int = 200, extra_headers: dict[str, str] | None = None) -> None:
         self._json({'data': data, 'meta': self._meta()}, status=status, extra_headers=extra_headers)
 
+    def send_panel_data(self, data: dict, *, panel: dict | None = None, status: int = 200, extra_headers: dict[str, str] | None = None) -> None:
+        flat = panel if panel is not None else data
+        self._json({**flat, 'data': data, 'meta': self._meta()}, status=status, extra_headers=extra_headers)
+
     def send_error_envelope(
         self,
         *,
