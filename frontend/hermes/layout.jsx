@@ -63,9 +63,9 @@ const PAGE_META = {
   config:    { title: 'Config',      sub: '' },
 };
 
-function Sidebar({ active, onNav, collapsed, setCollapsed }) {
+function Sidebar({ active, onNav, collapsed, setCollapsed, mobileOpen }) {
   return (
-    <aside className="hc-sidebar">
+    <aside className={`hc-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
       <div className="hc-brand">
         <div className="hc-brand-mark" title="Hermes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,10 +114,15 @@ function Sidebar({ active, onNav, collapsed, setCollapsed }) {
   );
 }
 
-function Topbar({ active, onRefresh, onNav, gatewayOnline, setGatewayOnline, clock }) {
+function Topbar({ active, onRefresh, onNav, gatewayOnline, setGatewayOnline, clock, onToggleMobile }) {
   const meta = PAGE_META[active] || {};
   return (
     <header className="hc-topbar">
+      <button className="hc-mobile-toggle" onClick={onToggleMobile} aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
       <div className="hc-breadcrumb">
         <span>Hermes</span>
         <span className="sep">/</span>

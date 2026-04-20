@@ -15,6 +15,7 @@ function App() {
   const [gatewayOnline, setGatewayOnline] = usApp(true);
   const [clock, setClock] = usApp('14:32:18 UTC');
   const [tweaksOn, setTweaksOn] = usApp(false);
+  const [mobileMenu, setMobileMenu] = usApp(false);
 
   ueApp(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
   ueApp(() => { localStorage.setItem('hc_state', JSON.stringify({ active, theme })); }, [active, theme]);
@@ -68,10 +69,14 @@ function App() {
 
   return (
     <div className="hc-shell" data-collapsed={collapsed ? 'true' : 'false'}>
-      <Sidebar active={active} onNav={setActive} collapsed={collapsed} setCollapsed={setCollapsed} />
+      <div className={`hc-sidebar-backdrop${mobileMenu ? ' visible' : ''}`}
+        onClick={() => setMobileMenu(false)} />
+      <Sidebar active={active} onNav={(k) => { setActive(k); setMobileMenu(false); }}
+        collapsed={collapsed} setCollapsed={setCollapsed} mobileOpen={mobileMenu} />
       <div className="hc-main">
         <Topbar active={active} onRefresh={() => window.location.reload()} onNav={setActive}
-          gatewayOnline={gatewayOnline} setGatewayOnline={setGatewayOnline} clock={clock} />
+          gatewayOnline={gatewayOnline} setGatewayOnline={setGatewayOnline} clock={clock}
+          onToggleMobile={() => setMobileMenu(!mobileMenu)} />
         <div className="hc-page">
           <div className="hc-page-header">
             <div className="hc-page-title">
