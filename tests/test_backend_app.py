@@ -709,9 +709,59 @@ def test_health_doctor_returns_checks():
     assert 'checks' in payload['data']
     assert isinstance(payload['data']['checks'], list)
     assert len(payload['data']['checks']) >= 1
-    assert payload['data']['checks'][0]['name'] == 'runtime'
+    assert payload['data']['checks'][0]['name'] == 'Runtime'
     assert payload['data']['checks'][0]['status'] == 'ok'
     assert 'overall_status' in payload['data']
+
+
+def test_ops_logs_returns_consolidated_panel_items():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        status, _, payload = _request(server, '/ops/logs', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert 'events' in payload['data']
+    assert 'audit' in payload['data']
+    assert 'items' in payload
+    assert 'count' in payload
+    assert isinstance(payload['items'], list)
+
+
+
+def test_ops_agent_returns_agent_detail_panel():
+    server, thread = _start_test_server()
+    try:
+        login_status, login_headers, _ = _request(
+            server,
+            '/auth/login',
+            method='POST',
+            json_body={'password': 'dev-password'},
+        )
+        session_cookie = login_headers['Set-Cookie'].split(';', 1)[0]
+        status, _, payload = _request(server, '/ops/agent?agent_id=agent-main', headers={'Cookie': session_cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert login_status == 200
+    assert status == 200
+    assert payload['id'] == 'agent-main'
+    assert payload['data']['agent']['agent_id'] == 'agent-main'
+    assert 'sessions' in payload['data']['agent']
+    assert 'total_tokens' in payload['data']['agent']
 
 
 def test_static_styles_css_returns_css():

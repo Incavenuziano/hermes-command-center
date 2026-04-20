@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import time
+from datetime import datetime, timezone
+
 from approvals import approvals_store
 from audit_log import audit_log_store
 from auth import auth_manager
@@ -12,7 +15,136 @@ from read_only_mode import read_only_mode_store
 from runtime_adapter import runtime_adapter
 
 
+_SERVER_START = time.monotonic()
 _APPROVAL_RISK_BY_KIND = {'db.migrate': 'high', 'shell.run': 'low', 'file.edit': 'medium'}
+
+
+def _relative_time(iso: str | None) -> str:
+    if not iso:
+        return 'unknown'
+    try:
+        dt = datetime.fromisoformat(str(iso).replace('Z', '+00:00'))
+        seconds = int((datetime.now(timezone.utc) - dt).total_seconds())
+    except Exception:
+        return str(iso)
+    if seconds < 0:
+        return 'just now'
+    if seconds < 60:
+        return f'{seconds}s ago'
+    if seconds < 3600:
+        return f'{seconds // 60}m ago'
+    if seconds < 86400:
+        return f'{seconds // 3600}h ago'
+    return f'{seconds // 86400}d ago'
+
+
+def _format_time_short(iso: str | None) -> str:
+    if not iso:
+        return ''
+    try:
+        dt = datetime.fromisoformat(str(iso).replace('Z', '+00:00'))
+        return dt.strftime('%H:%M')
+    except Exception:
+        return str(iso)
+
+
+def _map_event_tone(kind: str) -> str:
+    if 'error' in kind or 'fail' in kind or 'missed' in kind:
+        return 'err'
+    if 'warn' in kind or 'threshold' in kind or 'degraded' in kind:
+        return 'warn'
+    if 'completed' in kind or 'resolved' in kind or 'healthy' in kind:
+        return 'ok'
+    if 'requested' in kind or 'created' in kind or 'started' in kind:
+        return 'acc'
+    return ''
+
+
+def _event_title(kind: str, source: str, data: dict) -> str:
+    if kind == 'system.bootstrap':
+        return 'System bootstrap · ready'
+    if kind.startswith('approval.'):
+        action = kind.split('.', 1)[1]
+        return f"Approval {action} · {data.get('approval_id', '')}"
+    if kind.startswith('session.'):
+        action = kind.split('.', 1)[1]
+        return f"Session {action} · {data.get('session_id', '')}"
+    if kind.startswith('process.'):
+        action = kind.split('.', 1)[1]
+        return f"Process {action} · {data.get('process_id', '')}"
+    if kind.startswith('cron.'):
+        action = kind.split('.', 1)[1]
+        name = data.get('name') or data.get('job_id', '')
+        return f'{name} · {action}'
+    return f'{kind} · {source}'
+
+
+def _event_detail(data: dict) -> str:
+    skip = {'agent_id', 'session_id', 'process_id', 'job_id', 'approval_id'}
+    parts = []
+    for key, val in data.items():
+        if key in skip:
+            continue
+        if isinstance(val, str) and val:
+            parts.append(val)
+        elif isinstance(val, (int, float)):
+            parts.append(f'{key}: {val}')
+    return ' · '.join(parts[:3]) if parts else ''
+
+
+def _map_events_for_panel(events: list[dict]) -> list[dict]:
+    items = []
+    for event in events:
+        kind = str(event.get('kind', ''))
+        source = str(event.get('source', ''))
+        data = event.get('data', {}) if isinstance(event.get('data'), dict) else {}
+        items.append({
+            't': _format_time_short(event.get('at')),
+            'kind': kind,
+            'source': source,
+            'title': _event_title(kind, source, data),
+            'tone': _map_event_tone(kind),
+            'detail': _event_detail(data),
+        })
+    return items
+
+
+def _session_totals(sessions: list[dict]) -> tuple[int, float, str]:
+    total_tokens = 0
+    total_cost = 0.0
+    preferred_model = 'unknown'
+    for session in sessions:
+        total_tokens += int(session.get('input_tokens') or 0) + int(session.get('output_tokens') or 0) + int(session.get('reasoning_tokens') or 0)
+        total_cost += float(session.get('actual_cost_usd') or 0.0)
+        if preferred_model == 'unknown' and session.get('model'):
+            preferred_model = str(session.get('model'))
+    return total_tokens, round(total_cost, 4), preferred_model
+
+
+def _map_sessions_brief(sessions: list[dict]) -> list[dict]:
+    items = []
+    for session in sessions:
+        tokens = int(session.get('input_tokens') or 0) + int(session.get('output_tokens') or 0) + int(session.get('reasoning_tokens') or 0)
+        items.append({
+            'id': session.get('session_id', ''),
+            'agent': str(session.get('agent_id') or session.get('source') or 'agent-main'),
+            'status': session.get('status', 'unknown'),
+            'platform': session.get('platform') or session.get('source') or 'cli',
+            'title': session.get('title') or session.get('display_name') or session.get('session_id', ''),
+            'started': _format_time_short(session.get('started_at')),
+            'tokens': tokens,
+        })
+    return items
+
+
+def _server_uptime_string() -> str:
+    uptime_secs = int(time.monotonic() - _SERVER_START)
+    hours, remainder = divmod(uptime_secs, 3600)
+    minutes = remainder // 60
+    if hours >= 24:
+        days, hours = divmod(hours, 24)
+        return f'{days}d {hours}h {minutes}m'
+    return f'{hours}h {minutes}m'
 
 
 def _map_approval_for_panel(item: dict) -> dict:
@@ -33,7 +165,7 @@ def _system_health_panel() -> dict:
         'env': ENV,
         'bind': f'{HOST}:{PORT}',
         'auth': 'passkey + loopback' if AUTH_ENABLED else 'local-trusted',
-        'uptime': 'unknown',
+        'uptime': _server_uptime_string(),
         'version': f'{SERVICE_NAME}/0.4',
     }
 
@@ -96,6 +228,64 @@ def ops_overview(handler) -> None:
     ]
     overview['system_health'] = _system_health_panel()
     handler.send_panel_data(overview)
+
+
+@route('GET', '/ops/logs', allow=('GET',))
+def ops_logs(handler) -> None:
+    _require_authenticated(handler)
+    limit_raw = (handler.query_params.get('limit') or [None])[0]
+    limit = 50
+    if limit_raw is not None:
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
+    events = derived_state_store.event_feed(limit=limit)
+    audit = audit_log_store.list_entries(limit=limit)
+    items = _map_events_for_panel(events.get('items', []))
+    for entry in audit.get('items', []):
+        items.append({
+            't': _format_time_short(entry.get('recorded_at')),
+            'kind': f'audit.{entry.get("action_type", "unknown")}',
+            'source': entry.get('actor_user', 'system'),
+            'title': f'{entry.get("action_type", "")} · {entry.get("target_type", "")}:{entry.get("target_id", "")}',
+            'tone': 'ok' if entry.get('result') in ('enabled', 'executed', 'ok') else '',
+            'detail': entry.get('result', ''),
+        })
+    items.sort(key=lambda item: item.get('t', ''), reverse=True)
+    handler.send_panel_data(
+        {'events': events, 'audit': audit},
+        panel={'items': items[:limit], 'count': len(items)},
+    )
+
+
+@route('GET', '/ops/agent', allow=('GET',))
+def ops_agent_detail(handler) -> None:
+    _require_authenticated(handler)
+    agent_id = (handler.query_params.get('agent_id') or [None])[0]
+    if not agent_id:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='agent_id is required', details={'field': 'agent_id'})
+    overview = derived_state_store.overview()
+    overview_agent = next((item for item in overview.get('agents', []) if item.get('agent_id') == agent_id), None)
+    if overview_agent is None:
+        raise RequestValidationError(status=404, code='ops.agent_not_found', message='Agent not found', details={'agent_id': agent_id})
+    sessions = runtime_adapter.list_sessions()
+    agent_sessions = [session for session in sessions if str(session.get('agent_id') or 'agent-main') == agent_id]
+    total_tokens, total_cost, preferred_model = _session_totals(agent_sessions)
+    agent = {
+        'agent_id': agent_id,
+        'id': agent_id,
+        'role': overview_agent.get('role', 'worker'),
+        'status': overview_agent.get('status', 'unknown'),
+        'last_seen_at': overview_agent.get('last_seen_at'),
+        'lastSeen': _relative_time(overview_agent.get('last_seen_at')),
+        'model': preferred_model,
+        'session_count': len(agent_sessions),
+        'total_tokens': total_tokens,
+        'total_cost_usd': total_cost,
+        'sessions': _map_sessions_brief(agent_sessions[:10]),
+    }
+    handler.send_panel_data({'agent': agent}, panel=agent)
 
 
 @route('GET', '/ops/events', allow=('GET',))
