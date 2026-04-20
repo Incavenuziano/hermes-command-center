@@ -65,7 +65,12 @@ def test_health_endpoint_returns_contract_headers_and_request_id():
     assert headers['X-Frame-Options'] == 'DENY'
     assert headers['X-Content-Type-Options'] == 'nosniff'
     assert headers['Referrer-Policy'] == 'no-referrer'
-    assert 'default-src' in headers['Content-Security-Policy']
+    csp = headers['Content-Security-Policy']
+    assert 'default-src' in csp
+    assert 'https://unpkg.com' in csp
+    assert "'unsafe-eval'" in csp
+    assert 'https://fonts.googleapis.com' in csp
+    assert 'https://fonts.gstatic.com' in csp
     assert payload['meta']['request_id'] == headers['X-Request-ID']
     assert payload['meta']['contract_version'] == '2026-04-15'
     assert payload['data']['overall_status'] == 'ok'
@@ -675,3 +680,120 @@ def test_apply_runtime_posture_enforces_restrictive_umask(monkeypatch):
     apply_runtime_posture()
 
     assert applied == {'mask': 0o077}
+
+
+def test_health_live_returns_ok():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/health/live')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['status'] == 'ok'
+
+
+def test_health_doctor_returns_checks():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/health/doctor')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'checks' in payload['data']
+    assert isinstance(payload['data']['checks'], list)
+    assert len(payload['data']['checks']) >= 1
+    assert payload['data']['checks'][0]['name'] == 'runtime'
+    assert payload['data']['checks'][0]['status'] == 'ok'
+    assert 'overall_status' in payload['data']
+
+
+def test_static_styles_css_returns_css():
+    server, thread = _start_test_server()
+    try:
+        url = f'http://127.0.0.1:{server.server_address[1]}/static/styles.css'
+        req = urllib.request.Request(url, method='GET')
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            status = resp.status
+            content_type = resp.headers['Content-Type']
+            body = resp.read().decode('utf-8')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'text/css' in content_type
+    assert 'hc-shell' in body
+
+
+def test_static_hermes_data_js_returns_javascript():
+    server, thread = _start_test_server()
+    try:
+        url = f'http://127.0.0.1:{server.server_address[1]}/static/hermes/data.js'
+        req = urllib.request.Request(url, method='GET')
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            status = resp.status
+            content_type = resp.headers['Content-Type']
+            body = resp.read().decode('utf-8')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'javascript' in content_type
+    assert 'HC_DATA' in body
+
+
+def test_static_hermes_jsx_returns_javascript():
+    server, thread = _start_test_server()
+    try:
+        url = f'http://127.0.0.1:{server.server_address[1]}/static/hermes/icons.jsx'
+        req = urllib.request.Request(url, method='GET')
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            status = resp.status
+            content_type = resp.headers['Content-Type']
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'javascript' in content_type
+
+
+def test_spa_shell_routes_return_html():
+    server, thread = _start_test_server()
+    try:
+        for path in ['/', '/agents', '/dashboard', '/terminal', '/logs']:
+            url = f'http://127.0.0.1:{server.server_address[1]}{path}'
+            req = urllib.request.Request(url, method='GET')
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                content_type = resp.headers['Content-Type']
+                body = resp.read().decode('utf-8')
+                assert 'text/html' in content_type, f'{path} should return HTML'
+                assert '<div id="root">' in body, f'{path} should contain React root'
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+
+def test_runtime_cron_jobs_alias_returns_data():
+    server, thread = _start_test_server()
+    try:
+        status, _, payload = _request(server, '/runtime/cron/jobs')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert 'items' in payload['data']
+    assert 'count' in payload['data']
