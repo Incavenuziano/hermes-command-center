@@ -179,6 +179,13 @@ def ops_cron_jobs(handler) -> None:
     handler.send_data({'items': jobs, 'count': len(jobs)})
 
 
+@route('GET', '/runtime/cron/jobs', allow=('GET',))
+def runtime_cron_jobs(handler) -> None:
+    _require_authenticated(handler)
+    jobs = runtime_adapter.list_cron_jobs()
+    handler.send_data({'items': jobs, 'count': len(jobs)})
+
+
 @route('GET', '/ops/cron/jobs/cron-live-1', allow=('GET',))
 def ops_cron_job_detail_static(handler) -> None:
     _require_authenticated(handler)

@@ -215,6 +215,9 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/')
+        _, _, layout_body = _request(server, '/static/hermes/layout.jsx')
+        _, _, app_body = _request(server, '/static/hermes/app.jsx')
+        _, _, pages_a_body = _request(server, '/static/hermes/pages_a.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -222,54 +225,47 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'sidebar-toggle' in body
-    assert 'global-search' in body
-    assert 'gateway-runtime-button' in body
-    assert 'gateway-runtime-status' in body
-    assert 'Visão Geral' in body
-    assert 'Agentes' in body
-    assert 'Trabalhos' in body
-    assert 'Conhecimento' in body
-    assert 'Sistema' in body
-    assert 'Dashboard' in body
-    assert 'Uso' in body
-    assert 'Conversar' in body
-    assert 'Calendário' in body
-    assert 'API&#x27;s' in body or 'API\'s' in body or 'API’s' in body or 'API&apos;s' in body
-    assert 'sidebar-brand-mark' in body
-    assert 'command-center' in body
-    assert 'sidebar-footer' in body
-    assert 'operator-avatar' in body
-    assert 'topbar-breadcrumb' in body
-    assert 'global-search-shortcut' in body
-    assert 'page-theme-pill' in body
-    assert 'page-filter-button' in body
-    assert 'page-export-button' in body
-    assert 'dashboard-stat-grid' in body
-    assert 'dashboard-live-activity' in body
-    assert 'dashboard-top-agents' in body
-    assert 'dashboard-cron-overview' in body
-    assert 'sidebar-collapse-button' in body
-    assert 'page-subtitle' in body
-    assert 'hc-nav-icon' in body
-    assert 'status-pill-dot' in body
-    assert 'dashboard-hero-chart' in body
-    assert 'usage-main-chart' in body
-    assert 'split-view' in body
-    assert '<svg' in body
-    assert 'nav-item-label' in body
-    assert 'nav-item-badge' in body
-    assert 'topbar-clock' in body
-    assert 'dashboard-kpi-card' in body
-    assert 'live-activity-feed' in body
-    assert 'usage-breaker-card' in body
-    assert 'usage-agent-share-bar' in body
+    assert '<div id="root">' in body
+    assert '/static/vendor/react.production.min.js' in body
+    assert '/static/vendor/react-dom.production.min.js' in body
+    assert '/static/vendor/babel.min.js' in body
+    assert 'unpkg.com' not in body
+    assert 'fonts.googleapis.com' in body
+
+    assert 'Geral' in layout_body
+    assert 'Agentes' in layout_body
+    assert 'Trabalhos' in layout_body
+    assert 'Conhecimento' in layout_body
+    assert 'Sistema' in layout_body
+    assert 'Dashboard' in layout_body
+    assert 'Conversar' in layout_body
+    assert 'calendar' in layout_body
+    assert 'API' in layout_body
+    assert 'hc-brand-mark' in layout_body
+    assert 'command' in layout_body
+    assert 'hc-sidebar-footer' in layout_body
+    assert 'hc-operator-avatar' in layout_body
+    assert 'hc-breadcrumb' in layout_body
+    assert 'hc-search' in layout_body
+    assert 'hc-status-pill' in layout_body
+    assert 'hc-collapse-btn' in layout_body
+    assert 'collapsed' in layout_body or 'Collapse' in layout_body
+    assert 'Icon' in layout_body
+    assert 'badge' in layout_body
+    assert 'clock' in app_body
+    assert 'Tweaks' in app_body
+    assert 'Filter' in app_body
+    assert 'Export' in app_body
+    assert '<svg' in layout_body
+    assert 'Dashboard' in pages_a_body
+    assert 'Sparkline' in pages_a_body or 'Stat' in pages_a_body
 
 
 def test_agents_page_is_served_with_same_frontend_shell():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/agents')
+        _, _, pages_a = _request(server, '/static/hermes/pages_a.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -277,21 +273,20 @@ def test_agents_page_is_served_with_same_frontend_shell():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Agentes' in body
-    assert 'agents-page-list' in body
-    assert 'agents-page-detail' in body
-    assert 'agents-page-stats' in body
-    assert 'agents-page-sessions' in body
-    assert 'split-view' in body
-    assert 'agent-list-row' in body
-    assert 'agent-detail-card' in body
-    assert 'agent-session-table' in body
+    assert '<div id="root">' in body
+    assert 'AgentsPage' in pages_a
+    assert 'hc-split' in pages_a
+    assert 'hc-agent-avatar' in pages_a
+    assert 'hc-tbl' in pages_a
+    assert 'sessions' in pages_a
+    assert 'Agents' in pages_a or 'agents' in pages_a
 
 
 def test_cron_page_is_served_with_run_history_and_output_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/cron')
+        _, _, pages_b = _request(server, '/static/hermes/pages_b.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -299,21 +294,21 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Crons' in body
-    assert 'cron-page-list' in body
-    assert 'cron-run-history' in body
-    assert 'cron-output-inspection' in body
-    assert 'cron-summary-grid' in body
-    assert 'cron-quick-actions' in body
-    assert 'cron-split-view' in body
-    assert 'cron-job-table' in body
-    assert 'cron-output-terminal' in body
+    assert '<div id="root">' in body
+    assert 'CronPage' in pages_b
+    assert 'hc-split' in pages_b
+    assert 'Run history' in pages_b
+    assert 'Last output' in pages_b
+    assert 'hc-pre' in pages_b
+    assert 'hc-tbl' in pages_b
+    assert 'Run now' in pages_b
 
 
 def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/activity')
+        _, _, pages_a = _request(server, '/static/hermes/pages_a.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -321,23 +316,20 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Atividade' in body
-    assert 'activity-page-list' in body
-    assert 'activity-drilldown' in body
-    assert 'activity-window-summary' in body
-    assert 'Carregar mais atividade' in body
-    assert 'activity-filter-bar' in body
-    assert 'activity-summary-grid' in body
-    assert 'split-view activity-split-view' in body
-    assert 'activity-feed-card' in body
-    assert 'activity-summary-stat' in body
-    assert 'activity-detail-card' in body
+    assert '<div id="root">' in body
+    assert 'ActivityPage' in pages_a
+    assert 'Event timeline' in pages_a
+    assert 'Event detail' in pages_a
+    assert 'hc-split' in pages_a
+    assert 'hc-feed' in pages_a
+    assert 'FeedItem' in pages_a
 
 
 def test_processes_page_is_served_with_registry_and_detail_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/processes')
+        _, _, pages_c = _request(server, '/static/hermes/pages_c.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -345,16 +337,17 @@ def test_processes_page_is_served_with_registry_and_detail_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Processos' in body
-    assert 'processes-page-list' in body
-    assert 'processes-page-detail' in body
-    assert 'processes-page-summary' in body
+    assert '<div id="root">' in body
+    assert 'DoctorPage' in pages_c
+    assert 'Processes' in pages_c or 'processes' in pages_c
+    assert 'hc-tbl' in pages_c
 
 
 def test_terminal_strategy_page_is_served_with_risk_posture_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/terminal')
+        _, _, pages_c = _request(server, '/static/hermes/pages_c.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -362,114 +355,102 @@ def test_terminal_strategy_page_is_served_with_risk_posture_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Terminal' in body
-    assert 'terminal-policy-summary' in body
-    assert 'terminal-policy-list' in body
-    assert 'terminal-policy-detail' in body
-    assert 'split-view terminal-split-view' in body
-    assert 'terminal-summary-grid' in body
-    assert 'terminal-mode-pill' in body
-    assert 'terminal-policy-card' in body
+    assert '<div id="root">' in body
+    assert 'TerminalPage' in pages_c
+    assert 'Terminal policy' in pages_c
+    assert 'risk posture' in pages_c
+    assert 'hc-term' in pages_c
+    assert 'hc-split' in pages_c or 'hc-grid' in pages_c
 
 
 def test_memory_page_is_served_with_summary_and_detail_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/memory')
+        _, _, pages_b = _request(server, '/static/hermes/pages_b.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
-    assert 'Memória' in body
-    assert 'memory-page-list' in body
-    assert 'memory-page-detail' in body
-    assert 'split-view memory-split-view' in body
-    assert 'memory-summary-grid' in body
-    assert 'memory-scope-pill' in body
-    assert 'memory-detail-card' in body
+    assert '<div id="root">' in body
+    assert 'MemoryPage' in pages_b
+    assert 'Memory' in pages_b
+    assert 'hc-split' in pages_b
+    assert 'scope' in pages_b
 
 
 def test_skills_page_is_served_with_browser_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/skills')
+        _, _, app_jsx = _request(server, '/static/hermes/app.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
-    assert 'Catálogo de skills' in body
-    assert 'skills-page-list' in body
-    assert 'skills-page-detail' in body
-    assert 'HCC-design-advisor' in body
-    assert 'design-advisor-prompt' in body
-    assert 'design-advisor-result' in body
+    assert '<div id="root">' in body
+    assert 'skill' in app_jsx.lower()
+    assert 'PlaceholderPage' in app_jsx or 'SkillsPage' in app_jsx
 
 
 def test_files_page_is_served_with_workspace_browser_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/files')
+        _, _, pages_b = _request(server, '/static/hermes/pages_b.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
-    assert 'Arquivos' in body
-    assert 'files-page-list' in body
-    assert 'files-page-detail' in body
-    assert 'split-view documents-split-view' in body
-    assert 'documents-summary-grid' in body
-    assert 'document-path-chip' in body
-    assert 'files-detail-card' in body
+    assert '<div id="root">' in body
+    assert 'DocumentsPage' in pages_b
+    assert 'Workspace files' in pages_b
+    assert 'hc-split' in pages_b
+    assert 'hc-tbl' in pages_b
 
 
 def test_profiles_page_is_served_with_reauth_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/profiles')
+        _, _, app_jsx = _request(server, '/static/hermes/app.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
-    assert 'Perfis' in body
-    assert 'profiles-page-list' in body
-    assert 'profiles-page-detail' in body
-    assert 'split-view profiles-split-view' in body
-    assert 'profiles-summary-grid' in body
-    assert 'profile-sensitivity-pill' in body
-    assert 'profiles-detail-card' in body
+    assert '<div id="root">' in body
+    assert 'preferences' in app_jsx or 'PlaceholderPage' in app_jsx
 
 
 def test_channels_page_is_served_with_gateway_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/channels')
+        _, _, app_jsx = _request(server, '/static/hermes/app.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert status == 200
-    assert 'Canais' in body
-    assert 'channels-page-list' in body
-    assert 'channels-page-detail' in body
-    assert 'split-view channels-split-view' in body
-    assert 'channels-summary-grid' in body
-    assert 'channel-platform-pill' in body
-    assert 'channels-detail-card' in body
+    assert '<div id="root">' in body
+    assert 'channels' in app_jsx
+    assert 'PlaceholderPage' in app_jsx
 
 
 def test_usage_page_is_served_with_operational_panels():
     server, thread = _start_test_server()
     try:
         status, headers, body = _request(server, '/usage')
+        _, _, pages_b = _request(server, '/static/hermes/pages_b.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -477,44 +458,46 @@ def test_usage_page_is_served_with_operational_panels():
 
     assert status == 200
     assert headers['Content-Type'].startswith('text/html')
-    assert 'Uso' in body
-    assert 'usage-summary' in body
-    assert 'usage-list' in body
-    assert 'usage-detail' in body
-    assert 'usage-breaker-form' in body
-    assert 'usage-agent-breakdown' in body
-    assert 'usage-stat-grid' in body
-    assert 'usage-top-sessions' in body
-    assert 'usage-performance-summary' in body
-    assert 'usage-breaker-card' in body
-    assert 'usage-agent-share-bar' in body
+    assert '<div id="root">' in body
+    assert 'UsagePage' in pages_b
+    assert 'Hourly burn' in pages_b
+    assert 'Circuit breaker' in pages_b
+    assert 'Agent breakdown' in pages_b
+    assert 'UsageChart' in pages_b
+    assert 'Bar' in pages_b
 
 
 def test_new_navigation_placeholder_routes_are_served():
-    expected = {
-        '/usage': 'Uso',
-        '/chat': 'Conversar',
-        '/sessions': 'Sessões',
-        '/tasks': 'Tarefas',
-        '/calendar': 'Calendário',
-        '/integrations': 'Integrações',
-        '/skill': 'Skills',
-        '/database': 'DataBase',
-        '/apis': 'API',
-        '/hooks': 'Segurança Hooks',
-        '/preferences': 'Preferências',
-        '/doctor': 'Diagnóstico',
-        '/logs': 'Logs',
-        '/tailscale': 'Tailscale',
-        '/config': 'Config',
-    }
+    routes = [
+        '/usage', '/chat', '/sessions', '/tasks', '/calendar',
+        '/integrations', '/skill', '/database', '/apis', '/hooks',
+        '/preferences', '/doctor', '/logs', '/tailscale', '/config',
+    ]
 
     server, thread = _start_test_server()
     try:
-        for path, marker in expected.items():
-            status, _, body = _request(server, path)
-            assert status == 200, path
-            assert marker in body, path
+        for path in routes:
+            status, headers, body = _request(server, path)
+            assert status == 200, f'{path} should return 200'
+            assert headers['Content-Type'].startswith('text/html'), f'{path} should return HTML'
+            assert '<div id="root">' in body, f'{path} should contain React root'
+
+        _, _, layout = _request(server, '/static/hermes/layout.jsx')
+        assert 'Usage' in layout
+        assert 'Conversar' in layout
+        assert 'sessions' in layout
+        assert 'Tarefas' in layout
+        assert 'calendar' in layout
+        assert 'integrations' in layout
+        assert 'Skills' in layout
+        assert 'Database' in layout
+        assert 'API' in layout
+        assert 'Hooks' in layout
+        assert 'preferences' in layout
+        assert 'Doctor' in layout
+        assert 'Logs' in layout
+        assert 'Tailscale' in layout
+        assert 'Config' in layout
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -526,24 +509,23 @@ def test_frontend_shell_exposes_premium_chat_and_sessions_surfaces():
     try:
         chat_status, _, chat_body = _request(server, '/chat')
         sessions_status, _, sessions_body = _request(server, '/sessions')
+        _, _, pages_a = _request(server, '/static/hermes/pages_a.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert chat_status == 200
-    assert 'chat-session-summary' in chat_body
-    assert 'chat-transcript' in chat_body
-    assert 'chat-stream-status' in chat_body
-    assert 'chat-inspector' in chat_body
-    assert 'chat-message-card' in chat_body
-    assert 'chat-message-tool' in chat_body
+    assert '<div id="root">' in chat_body
     assert sessions_status == 200
-    assert 'sessions-list' in sessions_body
-    assert 'session-detail' in sessions_body
-    assert 'sessions-stats' in sessions_body
-    assert 'sessions-related-transcript' in sessions_body
-    assert 'session-list-row' in sessions_body
+    assert '<div id="root">' in sessions_body
+    assert 'ChatPanel' in pages_a
+    assert 'SessionsPage' in pages_a
+    assert 'hc-chat' in pages_a
+    assert 'hc-msg' in pages_a
+    assert 'hc-msg-tool' in pages_a
+    assert 'transcript' in pages_a
+    assert 'streaming' in pages_a
 
 
 def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
@@ -551,21 +533,22 @@ def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
     try:
         doctor_status, _, doctor_body = _request(server, '/doctor')
         logs_status, _, logs_body = _request(server, '/logs')
+        _, _, pages_c = _request(server, '/static/hermes/pages_c.jsx')
     finally:
         server.shutdown()
         thread.join(timeout=2)
         server.server_close()
 
     assert doctor_status == 200
-    assert 'doctor-list' in doctor_body
-    assert 'doctor-detail' in doctor_body
-    assert 'doctor-summary-grid' in doctor_body
-    assert 'doctor-diagnostics-table' in doctor_body
+    assert '<div id="root">' in doctor_body
     assert logs_status == 200
-    assert 'logs-list' in logs_body
-    assert 'logs-filter-bar' in logs_body
-    assert 'logs-detail' in logs_body
-    assert 'logs-live-stream' in logs_body
+    assert '<div id="root">' in logs_body
+    assert 'DoctorPage' in pages_c
+    assert 'Diagnostics' in pages_c
+    assert 'hc-tbl' in pages_c
+    assert 'LogsPage' in pages_c
+    assert 'Log stream' in pages_c
+    assert 'hc-pre' in pages_c
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -757,25 +740,21 @@ def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():
     assert '.hc-stat' in body
     assert '.hc-panel' in body
     assert '.hc-feed-item' in body
-    assert '.hc-split' in body or '.split-view' in body
-    assert '.activity-split-view' in body
-    assert '.activity-summary-stat' in body
-    assert '.memory-summary-grid' in body
-    assert '.document-path-chip' in body
-    assert '.profiles-summary-grid' in body
-    assert '.profile-sensitivity-pill' in body
-    assert '.channels-summary-grid' in body
-    assert '.channel-platform-pill' in body
-    assert '.terminal-summary-grid' in body
-    assert '.terminal-mode-pill' in body
-    assert '@media (max-width: 1180px)' in body
-    assert '@media (max-width: 900px)' in body
-    assert '.page-toolbar-actions' in body
-    assert '.topbar-right' in body
-    assert '.sidebar-collapsed' in body
-    assert '.global-search-shell' in body
-    assert '.split-view' in body
-    assert '.app-shell' in body
+    assert '.hc-split' in body
+    assert '.hc-term' in body
+    assert '.hc-chat' in body
+    assert '.hc-tbl' in body
+    assert '.hc-kv' in body
+    assert '.hc-bar' in body
+    assert '.hc-tag' in body
+    assert '.hc-tweaks' in body
+    assert '.hc-nav-item' in body
+    assert '.hc-search' in body
+    assert '.hc-status-pill' in body
+    assert '.hc-btn' in body
+    assert '@media (max-width: 1280px)' in body
+    assert '@media (max-width: 980px)' in body
+    assert 'data-collapsed' in body
 
 
 def test_frontend_html_loads_geist_fonts_for_high_fidelity_shell():

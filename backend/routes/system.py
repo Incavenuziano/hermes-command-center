@@ -45,6 +45,27 @@ def system_info(handler) -> None:
     handler.send_data(payload)
 
 
+@route('GET', '/health/live', allow=('GET',))
+def health_live(handler) -> None:
+    handler.send_data({'status': 'ok'})
+
+
+@route('GET', '/health/doctor', allow=('GET',))
+def health_doctor(handler) -> None:
+    health = SystemHealth(
+        overall_status=ComponentStatus.OK,
+        runtime=SystemComponent(name='runtime', status=ComponentStatus.OK, detail='http server ready'),
+        database=SystemComponent(name='database', status=ComponentStatus.UNKNOWN, detail='not wired yet'),
+        event_bus=SystemComponent(name='event_bus', status=ComponentStatus.UNKNOWN, detail='not wired yet'),
+        details={'mode': 'local-skeleton', 'environment': ENV},
+    )
+    checks = [
+        {'name': comp.name, 'status': comp.status.value, 'detail': comp.detail}
+        for comp in [health.runtime, health.database, health.event_bus]
+    ]
+    handler.send_data({'checks': checks, 'overall_status': health.overall_status.value})
+
+
 @route('POST', '/system/inspect', allow=('POST',))
 def inspect_payload(handler) -> None:
     payload = handler.read_json_body()
