@@ -709,7 +709,7 @@ def test_health_doctor_returns_checks():
     assert 'checks' in payload['data']
     assert isinstance(payload['data']['checks'], list)
     assert len(payload['data']['checks']) >= 1
-    assert payload['data']['checks'][0]['name'] == 'runtime'
+    assert payload['data']['checks'][0]['name'] == 'Runtime'
     assert payload['data']['checks'][0]['status'] == 'ok'
     assert 'overall_status' in payload['data']
 
