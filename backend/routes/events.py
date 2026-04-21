@@ -11,6 +11,48 @@ from http_api import AuthenticationRequiredError, RequestValidationError, SECURI
 HEARTBEAT_MS = 5000
 
 
+def _map_event_tone(kind: str) -> str:
+    if kind.startswith('approval.'):
+        return 'acc'
+    if kind.endswith('.failed') or kind.endswith('.error') or kind.endswith('.missed'):
+        return 'err'
+    if kind.endswith('.completed') or kind.endswith('.ok'):
+        return 'ok'
+    return ''
+
+
+def _event_title(kind: str, source: str, data: dict) -> str:
+    if kind == 'system.bootstrap':
+        return 'System bootstrap · ready'
+    if kind.startswith('approval.'):
+        action = kind.split('.', 1)[1]
+        return f"Approval {action} · {data.get('approval_id', '')}"
+    if kind.startswith('session.'):
+        action = kind.split('.', 1)[1]
+        return f"Session {action} · {data.get('session_id', '')}"
+    if kind.startswith('process.'):
+        action = kind.split('.', 1)[1]
+        return f"Process {action} · {data.get('process_id', '')}"
+    if kind.startswith('cron.'):
+        action = kind.split('.', 1)[1]
+        name = data.get('name') or data.get('job_id', '')
+        return f'{name} · {action}'
+    return f'{kind} · {source}'
+
+
+def _event_detail(data: dict) -> str:
+    skip = {'agent_id', 'session_id', 'process_id', 'job_id', 'approval_id'}
+    parts: list[str] = []
+    for key, val in data.items():
+        if key in skip:
+            continue
+        if isinstance(val, str) and val:
+            parts.append(val)
+        elif isinstance(val, (int, float)):
+            parts.append(f'{key}: {val}')
+    return ' · '.join(parts[:3]) if parts else ''
+
+
 def _require_authenticated(handler) -> None:
     session_id = handler.require_session_id()
     state = auth_manager.session_state(session_id)
@@ -68,15 +110,32 @@ def ops_stream(handler) -> None:
         )
     ]
     for item in replay:
+        event_type = str(item['event_type'])
+        source_name = item['source']
+        payload_data = item['payload'] if isinstance(item.get('payload'), dict) else {}
         body_parts.append(
             _encode_sse_frame(
-                event=str(item['event_type']),
+                event=event_type,
                 event_id=int(item['event_id']),
                 data={
-                    'source': item['source'],
+                    'source': source_name,
                     'channel': item['channel'],
                     'recorded_at': item['recorded_at'],
-                    'payload': item['payload'],
+                    'payload': payload_data,
+                },
+            )
+        )
+        body_parts.append(
+            _encode_sse_frame(
+                event='activity',
+                event_id=int(item['event_id']),
+                data={
+                    't': item['recorded_at'],
+                    'kind': event_type,
+                    'source': source_name,
+                    'title': _event_title(event_type, source_name, payload_data),
+                    'tone': _map_event_tone(event_type),
+                    'detail': _event_detail(payload_data),
                 },
             )
         )

@@ -313,6 +313,18 @@ function mapLiveDoctor(doctorData) {
   return Array.isArray(doctorData?.checks) ? doctorData.checks : null;
 }
 
+function mapLiveLogs(logsData) {
+  const items = Array.isArray(logsData?.items) ? logsData.items : null;
+  if (!items) return null;
+  return items.map((item, index) => ({
+    _id: item.id || [item.kind || 'log', item.source || 'runtime', item.t || '—', item.title || `log-${index + 1}`, item.detail || ''].join('|'),
+    level: item.tone === 'err' ? 'err' : (item.tone === 'warn' ? 'warn' : 'info'),
+    t: item.t || '—',
+    source: item.source || 'runtime',
+    msg: [item.title || item.kind || 'event', item.detail].filter(Boolean).join(' · '),
+  }));
+}
+
 async function tryLoadLiveData() {
   const overviewPayload = await fetchJson('/ops/overview');
   const overview = unwrapData(overviewPayload);
@@ -339,6 +351,11 @@ async function tryLoadLiveData() {
   const doctorData = unwrapData(doctorPayload);
   const mappedDoctor = mapLiveDoctor(doctorData);
   if (mappedDoctor) window.HC_DATA.doctor = mappedDoctor;
+
+  const logsPayload = await fetchJson('/ops/logs?limit=50');
+  const logsData = unwrapData(logsPayload);
+  const mappedLogs = mapLiveLogs(logsData);
+  if (mappedLogs) window.HC_DATA.logs = mappedLogs;
 }
 
 tryLoadLiveData();

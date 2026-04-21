@@ -232,15 +232,18 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'unpkg.com' not in body
     assert 'fonts.googleapis.com' in body
 
-    assert 'Geral' in layout_body
-    assert 'Agentes' in layout_body
-    assert 'Trabalhos' in layout_body
-    assert 'Conhecimento' in layout_body
-    assert 'Sistema' in layout_body
+    assert 'Core ops' in layout_body
+    assert 'Workspace' in layout_body
+    assert 'Advanced' in layout_body
     assert 'Dashboard' in layout_body
     assert 'Conversar' in layout_body
-    assert 'calendar' in layout_body
-    assert 'API' in layout_body
+    assert 'Crons' in layout_body
+    assert 'Documentos' in layout_body
+    assert 'Canais' in layout_body
+    assert "label: 'Skills'" in layout_body
+    assert 'Terminal' in layout_body
+    assert "label: 'Calendário'" not in layout_body
+    assert "label: \"API's\"" not in layout_body
     assert 'hc-brand-mark' in layout_body
     assert 'command' in layout_body
     assert 'hc-sidebar-footer' in layout_body
@@ -249,6 +252,11 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'hc-search' in layout_body
     assert 'hc-status-pill' in layout_body
     assert 'hc-collapse-btn' in layout_body
+    assert 'hc-mobile-toggle' in layout_body
+    assert 'onToggleMobile' in layout_body
+    assert 'mobileOpen' in layout_body
+    assert 'aria-expanded' in layout_body
+    assert 'hc-sidebar-nav' in layout_body
     assert 'collapsed' in layout_body or 'Collapse' in layout_body
     assert 'Icon' in layout_body
     assert 'badge' in layout_body
@@ -486,18 +494,23 @@ def test_new_navigation_placeholder_routes_are_served():
         assert 'Usage' in layout
         assert 'Conversar' in layout
         assert 'sessions' in layout
-        assert 'Tarefas' in layout
-        assert 'calendar' in layout
-        assert 'integrations' in layout
-        assert 'Skills' in layout
-        assert 'Database' in layout
-        assert 'API' in layout
-        assert 'Hooks' in layout
-        assert 'preferences' in layout
+        assert 'Crons' in layout
+        assert 'Memória' in layout
+        assert 'Documentos' in layout
         assert 'Doctor' in layout
         assert 'Logs' in layout
-        assert 'Tailscale' in layout
-        assert 'Config' in layout
+        assert 'Canais' in layout
+        assert "label: 'Skills'" in layout
+        assert 'Advanced' in layout
+        assert "label: 'Tarefas'" not in layout
+        assert "label: 'Calendário'" not in layout
+        assert "label: 'Integrações'" not in layout
+        assert "label: 'Database'" not in layout
+        assert "label: \"API's\"" not in layout
+        assert "label: 'Hooks'" not in layout
+        assert "label: 'Preferências'" not in layout
+        assert "label: 'Tailscale'" not in layout
+        assert "label: 'Config'" not in layout
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -525,7 +538,24 @@ def test_frontend_shell_exposes_premium_chat_and_sessions_surfaces():
     assert 'hc-msg' in pages_a
     assert 'hc-msg-tool' in pages_a
     assert 'transcript' in pages_a
-    assert 'streaming' in pages_a
+    assert '/ops/stream' in pages_a
+    assert 'new EventSource(streamUrl, { withCredentials: true })' in pages_a
+    assert "['activity'].forEach" in pages_a
+    assert 'window.setInterval(refreshLiveEvents, 5000)' not in pages_a
+    assert '/ops/logs?limit=14' not in pages_a
+    assert 'const seedEvents = data.events.slice(0, 14).map((event, index) => ({' in pages_a
+    assert 'const [liveEvents, setLiveEvents] = usA(seedEvents);' in pages_a
+    assert 'const [lastEventId, setLastEventId] = usA(null);' in pages_a
+    assert 'const [streamConnected, setStreamConnected] = usA(false);' in pages_a
+    assert 'const [streamEverOpened, setStreamEverOpened] = usA(false);' in pages_a
+    assert 'CONNECTING' not in pages_a
+    assert 'CONNECTED' in pages_a
+    assert 'SYNCING' in pages_a
+    assert 'last 14 events · awaiting first live activity' in pages_a
+    assert 'source.readyState === EventSource.CLOSED' in pages_a
+    assert 'setRealFeedReady(false);' not in pages_a
+    assert 'Embedding batch committed' not in pages_a
+    assert 'Gateway healthy · 138ms p99' not in pages_a
 
 
 def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
@@ -549,6 +579,12 @@ def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
     assert 'LogsPage' in pages_c
     assert 'Log stream' in pages_c
     assert 'hc-pre' in pages_c
+    assert '/ops/logs?limit=50' in pages_c
+    assert 'window.setInterval(refreshLogs, 5000)' in pages_c
+    assert 'indexer-docs committed embedding batch · 128 docs' not in pages_c
+    assert 'emit tool.invoked · hermes-primary · grep_search' not in pages_c
+    assert 'const [logsFeedReady, setLogsFeedReady] = usC(false);' in pages_c
+    assert 'STREAMING' in pages_c
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -752,8 +788,15 @@ def test_frontend_stylesheet_exposes_prototype_theme_tokens_and_components():
     assert '.hc-search' in body
     assert '.hc-status-pill' in body
     assert '.hc-btn' in body
+    assert '.hc-mobile-toggle' in body
+    assert '.hc-sidebar-backdrop' in body
+    assert '.hc-sidebar.mobile-open' in body
     assert '@media (max-width: 1280px)' in body
     assert '@media (max-width: 980px)' in body
+    assert '@media (max-width: 640px)' in body
+    assert 'transform: translateX(-100%)' in body
+    assert 'grid-template-columns: 1fr' in body
+    assert 'overflow-x: auto' in body
     assert 'data-collapsed' in body
 
 
@@ -1607,6 +1650,35 @@ def test_runtime_event_ingest_updates_derived_state_and_feed():
     assert events_status == 200
     assert events_payload['data']['items'][0]['kind'] == 'session.started'
     assert events_payload['data']['items'][0]['source'] == 'hermes-runtime'
+
+
+def test_activity_feed_includes_real_runtime_snapshot_events(tmp_path, monkeypatch):
+    runtime_home = tmp_path / 'hermes-home'
+    _write_runtime_fixture(runtime_home)
+    monkeypatch.setenv('HCC_HERMES_HOME', str(runtime_home))
+    monkeypatch.setenv('HCC_DATA_DIR', str(tmp_path / 'command-center-data'))
+
+    server, thread = _start_test_server()
+    try:
+        cookie, _ = _login(server)
+        overview_status, _, overview_payload = _request(server, '/ops/overview', headers={'Cookie': cookie})
+        activity_status, _, activity_payload = _request(server, '/ops/activity?limit=20', headers={'Cookie': cookie})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert overview_status == 200
+    overview_kinds = {item['kind'] for item in overview_payload['data']['events']}
+    assert any(kind.startswith('session.') for kind in overview_kinds)
+    assert any(kind.startswith('process.') for kind in overview_kinds)
+    assert any(kind.startswith('cron.') for kind in overview_kinds)
+
+    assert activity_status == 200
+    activity_kinds = {item['kind'] for item in activity_payload['data']['items']}
+    assert any(kind.startswith('session.') for kind in activity_kinds)
+    assert any(kind.startswith('process.') for kind in activity_kinds)
+    assert any(kind.startswith('cron.') for kind in activity_kinds)
 
 
 def test_approvals_backend_queues_and_resolves_items(tmp_path, monkeypatch):

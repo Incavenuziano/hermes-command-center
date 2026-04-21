@@ -10,6 +10,7 @@ from typing import Any
 from config import DATA_DIR, SERVICE_NAME, ensure_directories
 from event_bus import event_bus_store
 from runtime_adapter import runtime_adapter
+from approvals import approvals_store
 
 
 def _now_iso() -> str:
@@ -40,9 +41,10 @@ class DerivedStateStore:
         self._ensure_current_store()
         live = runtime_adapter.overview()
         merged = self._apply_events_to_overview(live)
+        merged_events = self._merged_events(live)
         self._overview = {
             **merged,
-            'events': deepcopy(self._events[:5]),
+            'events': deepcopy(merged_events[:5]),
         }
         self._overview['counts'] = {
             'agents': len(self._overview['agents']),
@@ -54,7 +56,7 @@ class DerivedStateStore:
 
     def event_feed(self, *, limit: int = 20, kind_prefix: str | None = None) -> dict[str, object]:
         self._ensure_current_store()
-        items = self._events
+        items = self._merged_events(runtime_adapter.overview())
         if kind_prefix:
             items = [item for item in items if str(item.get('kind', '')).startswith(kind_prefix)]
         bounded = deepcopy(items[:limit])
@@ -114,6 +116,97 @@ class DerivedStateStore:
         self._persist_root.mkdir(parents=True, exist_ok=True)
         payload = {'events': self._events, 'updated_at': _now_iso()}
         self._persist_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    def _merged_events(self, live_overview: dict[str, object] | None = None) -> list[dict[str, object]]:
+        overview = live_overview if isinstance(live_overview, dict) else runtime_adapter.overview()
+        items = [deepcopy(item) for item in self._events]
+        items.extend(self._snapshot_events(overview))
+        deduped: list[dict[str, object]] = []
+        seen: set[tuple[str, str, str]] = set()
+        for item in sorted(items, key=lambda entry: str(entry.get('at', '')), reverse=True):
+            data = item.get('data', {}) if isinstance(item.get('data'), dict) else {}
+            identity = (
+                str(item.get('kind', '')),
+                str(item.get('source', '')),
+                str(
+                    data.get('session_id')
+                    or data.get('process_id')
+                    or data.get('job_id')
+                    or data.get('approval_id')
+                    or data.get('status')
+                    or item.get('at', '')
+                ),
+            )
+            if identity in seen:
+                continue
+            seen.add(identity)
+            deduped.append(item)
+        return deduped[:100]
+
+    def _snapshot_events(self, overview: dict[str, object]) -> list[dict[str, object]]:
+        events: list[dict[str, object]] = []
+        for session in overview.get('sessions', []) if isinstance(overview.get('sessions'), list) else []:
+            if not isinstance(session, dict) or not session.get('session_id'):
+                continue
+            status = str(session.get('status') or 'active')
+            events.append({
+                'kind': f'session.{status}',
+                'source': str(session.get('source') or 'runtime-snapshot'),
+                'at': session.get('updated_at') or session.get('started_at') or _now_iso(),
+                'data': {
+                    'session_id': session.get('session_id'),
+                    'agent_id': session.get('agent_id') or 'agent-main',
+                    'status': status,
+                    'title': session.get('title') or session.get('session_id'),
+                    'model': session.get('model'),
+                },
+            })
+        for process in overview.get('processes', []) if isinstance(overview.get('processes'), list) else []:
+            if not isinstance(process, dict) or not process.get('process_id'):
+                continue
+            status = str(process.get('status') or 'running')
+            events.append({
+                'kind': f'process.{status}',
+                'source': 'runtime-snapshot',
+                'at': process.get('updated_at') or process.get('started_at') or _now_iso(),
+                'data': {
+                    'process_id': process.get('process_id'),
+                    'status': status,
+                    'command': process.get('command'),
+                    'pid': process.get('pid'),
+                },
+            })
+        for job in overview.get('cron_jobs', []) if isinstance(overview.get('cron_jobs'), list) else []:
+            if not isinstance(job, dict) or not job.get('job_id'):
+                continue
+            status = str(job.get('status') or 'scheduled')
+            events.append({
+                'kind': f'cron.{status}',
+                'source': 'runtime-snapshot',
+                'at': job.get('last_run_at') or job.get('next_run_at') or _now_iso(),
+                'data': {
+                    'job_id': job.get('job_id'),
+                    'name': job.get('name') or job.get('job_id'),
+                    'status': status,
+                    'schedule': job.get('schedule'),
+                    'last_status': job.get('last_status'),
+                },
+            })
+        for approval in approvals_store.list_items():
+            if not isinstance(approval, dict) or approval.get('status') != 'pending':
+                continue
+            events.append({
+                'kind': 'approval.pending',
+                'source': str(approval.get('source') or 'command-center'),
+                'at': approval.get('created_at') or _now_iso(),
+                'data': {
+                    'approval_id': approval.get('id'),
+                    'status': approval.get('status'),
+                    'kind': approval.get('kind'),
+                    'title': approval.get('title'),
+                },
+            })
+        return events
 
     def _apply_events_to_overview(self, overview: dict[str, object]) -> dict[str, object]:
         merged = deepcopy(overview)
