@@ -36,8 +36,8 @@ function TerminalPage({ data }) {
         <dl className="hc-kv">
           <dt>mode</dt><dd><Tag tone="warn">limited</Tag></dd>
           <dt>interactive</dt><dd><Tag tone="err">disabled</Tag></dd>
-          <dt>risk posture</dt><dd>restrictive</dd>
-          <dt>revisit</dt><dd className="hc-mono">milestone m2</dd>
+          <dt>risk posture</dt><dd>explicit-deny-until-reviewed</dd>
+          <dt>revisit</dt><dd className="hc-mono">milestone M4+</dd>
         </dl>
         <div className="hc-divider" />
         <p className="hc-text-sec" style={{ fontSize: 12, lineHeight: 1.55 }}>
@@ -155,7 +155,7 @@ function DoctorPage({ data }) {
       </div>
 
       <Panel title="Diagnostics" icon="doctor" sub="hermes runtime + subsystems"
-        actions={<button className="hc-btn sm primary"><Icon name="refresh" size={12} /> Re-run</button>}>
+        actions={<button className="hc-btn sm primary" onClick={() => window.location.reload()}><Icon name="refresh" size={12} /> Re-run</button>}>
         <table className="hc-tbl">
           <thead><tr><th>Check</th><th>Status</th><th>Detail</th><th></th></tr></thead>
           <tbody>

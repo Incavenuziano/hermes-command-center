@@ -142,7 +142,12 @@ function Topbar({ active, onRefresh, gatewayOnline, setGatewayOnline, clock, onT
       </button>
       <button
         className={`hc-btn ${gatewayOnline ? 'danger' : 'primary'}`}
-        onClick={() => setGatewayOnline(!gatewayOnline)}
+        onClick={() => {
+          const action = gatewayOnline ? 'kill' : 'start';
+          fetch('/ops/gateway-runtime', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) })
+            .then(r => { if (r.ok) setGatewayOnline(!gatewayOnline); })
+            .catch(() => {});
+        }}
       >
         <Icon name={gatewayOnline ? 'kill' : 'play'} size={14} stroke={2} />
         {gatewayOnline ? 'Kill gateway' : 'Start gateway'}

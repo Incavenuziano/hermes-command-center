@@ -313,6 +313,42 @@ function mapLiveDoctor(doctorData) {
   return Array.isArray(doctorData?.checks) ? doctorData.checks : null;
 }
 
+function mapLiveMemory(memoryData) {
+  const items = Array.isArray(memoryData?.items) ? memoryData.items : null;
+  if (!items) return null;
+  return items.map((item) => ({
+    scope: item.scope || item.id || 'unknown',
+    preview: item.preview || item.text || '',
+    updated: formatRelativeOrBrt(item.updated_at, '—'),
+  }));
+}
+
+function mapLiveFiles(filesData) {
+  const items = Array.isArray(filesData?.items) ? filesData.items : null;
+  if (!items) return null;
+  return items.map((item) => ({
+    path: item.path || 'unknown',
+    size: item.size_bytes != null ? (item.size_bytes >= 1024 ? `${(item.size_bytes / 1024).toFixed(1)} KB` : `${item.size_bytes} B`) : '—',
+    updated: '—',
+    preview: item.preview || '',
+  }));
+}
+
+function mapLiveProcesses(processesData) {
+  const items = Array.isArray(processesData?.items) ? processesData.items : null;
+  if (!items) return null;
+  return items.map((item) => ({
+    id: item.process_id || item.pid || 'unknown',
+    command: item.command || '—',
+    status: item.status || 'unknown',
+    pid: item.pid || '—',
+    cpu: 0,
+    mem: 0,
+    started: formatRelativeOrBrt(item.started_at, '—'),
+    agent: item.task_id || 'runtime',
+  }));
+}
+
 function mapLiveLogs(logsData) {
   const items = Array.isArray(logsData?.items) ? logsData.items : null;
   if (!items) return null;
@@ -356,6 +392,21 @@ async function tryLoadLiveData() {
   const logsData = unwrapData(logsPayload);
   const mappedLogs = mapLiveLogs(logsData);
   if (mappedLogs) window.HC_DATA.logs = mappedLogs;
+
+  const memoryPayload = await fetchJson('/ops/memory');
+  const memoryData = unwrapData(memoryPayload);
+  const mappedMemory = mapLiveMemory(memoryData);
+  if (mappedMemory && mappedMemory.length) window.HC_DATA.memory = mappedMemory;
+
+  const filesPayload = await fetchJson('/ops/files');
+  const filesData = unwrapData(filesPayload);
+  const mappedFiles = mapLiveFiles(filesData);
+  if (mappedFiles && mappedFiles.length) window.HC_DATA.files = mappedFiles;
+
+  const processesPayload = await fetchJson('/ops/processes');
+  const processesData = unwrapData(processesPayload);
+  const mappedProcesses = mapLiveProcesses(processesData);
+  if (mappedProcesses && mappedProcesses.length) window.HC_DATA.processes = mappedProcesses;
 }
 
 tryLoadLiveData();

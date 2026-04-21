@@ -1,6 +1,11 @@
 /* Hermes Command Center — Pages B: Usage, Cron, Memory, Documents */
 const { useState: usB } = React;
 
+function postJsonB(path, body) {
+  return fetch(path, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.json()).catch(() => null);
+}
+
 function UsagePage({ data }) {
   const u = data.usage;
   const pct = Math.round((u.today.cost / u.today.budget) * 100);
@@ -34,12 +39,17 @@ function UsagePage({ data }) {
           </dl>
           <div className="hc-divider" />
           <label className="hc-tweak-row"><label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Max cost (USD)</label>
-            <input defaultValue={u.breaker.maxCost.toFixed(2)} style={{ padding: '6px 10px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
+            <input id="hc-breaker-cost" defaultValue={u.breaker.maxCost.toFixed(2)} style={{ padding: '6px 10px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
           </label>
           <label className="hc-tweak-row"><label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Max tokens</label>
-            <input defaultValue={u.breaker.maxTokens} style={{ padding: '6px 10px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
+            <input id="hc-breaker-tokens" defaultValue={u.breaker.maxTokens} style={{ padding: '6px 10px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: 6, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
           </label>
-          <button className="hc-btn primary" style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}>Update breaker</button>
+          <button className="hc-btn primary" style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}
+            onClick={() => {
+              const cost = parseFloat(document.getElementById('hc-breaker-cost')?.value);
+              const tokens = parseInt(document.getElementById('hc-breaker-tokens')?.value, 10);
+              if (!isNaN(cost) && !isNaN(tokens)) postJsonB('/ops/costs/circuit-breaker', { max_actual_cost_usd: cost, max_total_tokens: tokens }).then(r => { if (r) window.location.reload(); });
+            }}>Update breaker</button>
         </Panel>
       </div>
 
@@ -121,7 +131,7 @@ function CronPage({ data }) {
                 <td><Tag tone={c.last === 'err' ? 'err' : c.last === 'warn' ? 'warn' : 'ok'}>{c.last}</Tag></td>
                 <td className="mono">{c.next}</td>
                 <td>
-                  <button className="hc-btn sm ghost"><Icon name={c.enabled ? 'pause' : 'play'} size={12} /></button>
+                  <button className="hc-btn sm ghost" onClick={(e) => { e.stopPropagation(); postJsonB('/ops/cron/control', { job_id: c.id, action: c.enabled ? 'pause' : 'resume' }).then(r => { if (r) window.location.reload(); }); }}><Icon name={c.enabled ? 'pause' : 'play'} size={12} /></button>
                 </td>
               </tr>
             ))}
@@ -132,8 +142,8 @@ function CronPage({ data }) {
       {sel && (
         <Panel title={sel.name} icon="cron" sub={sel.id}
           actions={[
-            <button key="r" className="hc-btn sm primary"><Icon name="play" size={12} /> Run now</button>,
-            <button key="p" className="hc-btn sm"><Icon name={sel.enabled ? 'pause' : 'play'} size={12} /> {sel.enabled ? 'Pause' : 'Resume'}</button>,
+            <button key="r" className="hc-btn sm primary" onClick={() => postJsonB('/ops/cron/control', { job_id: sel.id, action: 'run' }).then(r => { if (r) window.location.reload(); })}><Icon name="play" size={12} /> Run now</button>,
+            <button key="p" className="hc-btn sm" onClick={() => postJsonB('/ops/cron/control', { job_id: sel.id, action: sel.enabled ? 'pause' : 'resume' }).then(r => { if (r) window.location.reload(); })}><Icon name={sel.enabled ? 'pause' : 'play'} size={12} /> {sel.enabled ? 'Pause' : 'Resume'}</button>,
           ]}
           className="hc-split-detail">
           <dl className="hc-kv">
