@@ -1,5 +1,6 @@
 /* Hermes Command Center — Pages C: Terminal, Logs, Doctor, Config, Processes, other */
 const { useState: usC, useEffect: ueC, useRef: urC } = React;
+const { formatSaoPauloTime } = window.HC_TIME;
 
 function TerminalPage({ data }) {
   const [lines, setLines] = usC([
@@ -69,35 +70,63 @@ function TerminalPage({ data }) {
 
 function LogsPage({ data }) {
   const [filter, setFilter] = usC('all');
-  const [extras, setExtras] = usC([]);
+  const [logsFeedReady, setLogsFeedReady] = usC(false);
+  const [entries, setEntries] = usC(Array.isArray(data.logs) ? data.logs.slice(0, 50) : []);
+
   ueC(() => {
-    const pool = [
-      { level: 'info', source: 'http',    msg: 'GET /ops/cron/jobs 200 \u00b7 8ms' },
-      { level: 'info', source: 'event',   msg: 'emit tool.invoked \u00b7 hermes-primary \u00b7 grep_search' },
-      { level: 'warn', source: 'cost',    msg: 'projection 6.8h \u00b7 consider raising budget' },
-      { level: 'info', source: 'agent',   msg: 'indexer-docs committed embedding batch \u00b7 128 docs' },
-    ];
-    const timer = setInterval(() => {
-      const e = pool[Math.floor(Math.random() * pool.length)];
-      const now = new Date();
-      const t = `${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}:${String(now.getUTCSeconds()).padStart(2,'0')}`;
-      setExtras(prev => [{ ...e, t, _id: 'l_' + Math.random().toString(36).slice(2,6) }, ...prev].slice(0, 20));
-    }, 2400);
-    return () => clearInterval(timer);
+    let cancelled = false;
+    let timer = null;
+
+    function normalizeLiveLogs(payload) {
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      return items.map((item, index) => ({
+        _id: item.id || [item.kind || 'log', item.source || 'runtime', item.t || '—', item.title || `log-${index + 1}`, item.detail || ''].join('|'),
+        level: item.tone === 'err' ? 'err' : (item.tone === 'warn' ? 'warn' : 'info'),
+        t: item.t || '—',
+        source: item.source || 'runtime',
+        msg: [item.title || item.kind || 'event', item.detail].filter(Boolean).join(' · '),
+      }));
+    }
+
+    async function refreshLogs() {
+      try {
+        const response = await fetch('/ops/logs?limit=50', {
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const liveItems = normalizeLiveLogs(payload?.data || payload);
+        if (cancelled || !liveItems.length) return;
+        setEntries(liveItems);
+        setLogsFeedReady(true);
+      } catch {
+        if (!cancelled) setLogsFeedReady(false);
+      }
+    }
+
+    refreshLogs();
+    timer = window.setInterval(refreshLogs, 5000);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
   }, []);
 
-  const all = [...extras, ...data.logs];
-  const filtered = filter === 'all' ? all : all.filter(l => l.level === filter);
+  const filtered = filter === 'all' ? entries : entries.filter(l => l.level === filter);
+  const logsFeedTone = logsFeedReady ? 'ok' : 'warn';
+  const logsFeedBadge = logsFeedReady ? 'STREAMING' : 'SYNCING';
+  const logsFeedSub = logsFeedReady ? `${filtered.length} entries · real backend feed` : `${filtered.length} entries · waiting for backend refresh`;
 
   return (
-    <Panel title="Log stream" icon="logs" sub={`${filtered.length} entries`}
+    <Panel title="Log stream" icon="logs" sub={logsFeedSub}
       actions={[
         <div key="seg" className="hc-tweak-seg" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {['all','info','warn','err'].map(f => (
             <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>{f}</button>
           ))}
         </div>,
-        <Tag key="l" tone="ok"><Icon name="radio" size={10} />&nbsp;LIVE</Tag>,
+        <Tag key="l" tone={logsFeedTone}><Icon name="radio" size={10} />&nbsp;{logsFeedBadge}</Tag>,
         <button key="d" className="hc-btn sm ghost"><Icon name="download" size={12} /></button>,
       ]}>
       <div className="hc-pre" style={{ maxHeight: 560, overflow: 'auto', background: '#000', fontSize: 12, lineHeight: 1.7 }}>
@@ -105,7 +134,7 @@ function LogsPage({ data }) {
           <div key={l._id || i} style={{ color: l.level === 'warn' ? 'var(--warning)' : l.level === 'err' ? 'var(--danger)' : l.level === 'dim' ? 'var(--text-muted)' : 'var(--text-secondary)' }}>
             <span style={{ color: 'var(--text-muted)' }}>{l.t}</span>
             <span style={{ color: 'var(--accent)', marginLeft: 8 }}>{l.level.toUpperCase().padEnd(4)}</span>
-            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>[{l.source.padEnd(7)}]</span>
+            <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>[{String(l.source || 'runtime').padEnd(7)}]</span>
             <span style={{ marginLeft: 8 }}>{l.msg}</span>
           </div>
         ))}

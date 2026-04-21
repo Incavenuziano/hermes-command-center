@@ -97,11 +97,11 @@ function UsageChart({ values }) {
 function CronPage({ data }) {
   const [sel, setSel] = usB(data.cron[0]);
   const history = [
-    { id: sel.id + '_h1', at: '14:30:58', status: 'ok',   duration: '48s',   exit: 0 },
-    { id: sel.id + '_h2', at: '14:00:58', status: 'ok',   duration: '51s',   exit: 0 },
-    { id: sel.id + '_h3', at: '13:30:58', status: 'warn', duration: '2m 14s',exit: 0 },
-    { id: sel.id + '_h4', at: '13:00:58', status: 'ok',   duration: '44s',   exit: 0 },
-    { id: sel.id + '_h5', at: '12:30:58', status: 'err',  duration: '5m 12s',exit: 503 },
+    { id: sel.id + '_h1', at: '11:30:58 BRT', status: 'ok',   duration: '48s',   exit: 0 },
+    { id: sel.id + '_h2', at: '11:00:58 BRT', status: 'ok',   duration: '51s',   exit: 0 },
+    { id: sel.id + '_h3', at: '10:30:58 BRT', status: 'warn', duration: '2m 14s',exit: 0 },
+    { id: sel.id + '_h4', at: '10:00:58 BRT', status: 'ok',   duration: '44s',   exit: 0 },
+    { id: sel.id + '_h5', at: '09:30:58 BRT', status: 'err',  duration: '5m 12s',exit: 503 },
   ];
   return (
     <div className="hc-split">
@@ -166,12 +166,13 @@ function CronPage({ data }) {
             <h2><Icon name="terminal" size={14} /> Last output</h2>
           </div>
           <pre className="hc-pre">{`$ ${sel.name.toLowerCase().replace(/ /g,'-')} --run
-[14:30:58] starting\u2026
-[14:30:58] fetched 248 records
-[14:31:14] normalized 248 records
-[14:31:32] deduped \u00b7 12 duplicates dropped
-[14:31:46] upserted \u00b7 236 rows
-[14:31:46] done \u00b7 exit 0`}</pre>
+[11:30:58 BRT] starting\u2026
+[11:30:58 BRT] fetched 248 records
+[11:31:14 BRT] normalized 248 records
+[11:31:32 BRT] deduped \u00b7 12 duplicates dropped
+[11:31:46 BRT] upserted \u00b7 236 rows
+[11:31:46 BRT] done \u00b7 exit 0
+# timezone: America/Sao_Paulo (BRT, UTC-03:00)`}</pre>
         </Panel>
       )}
     </div>

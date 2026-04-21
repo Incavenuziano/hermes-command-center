@@ -1,28 +1,149 @@
 /* Hermes Command Center — Pages A: Dashboard, Agents, Sessions, Chat, Activity */
 const { useState: usA, useEffect: ueA, useMemo: umA, useRef: urA } = React;
+const { formatSaoPauloTime } = window.HC_TIME;
 
 function Dashboard({ data, setActive }) {
-  const [liveEvents, setLiveEvents] = usA(data.events);
+  const seedEvents = data.events.slice(0, 14).map((event, index) => ({
+    ...event,
+    _id: [event.kind || 'event', event.source || 'runtime', event.t || '—', event.title || `event-${index + 1}`, event.detail || ''].join('|'),
+  }));
+  const [liveEvents, setLiveEvents] = usA(seedEvents);
   const [newIds, setNewIds] = usA(new Set());
+  const [streamConnected, setStreamConnected] = usA(false);
+  const [streamEverOpened, setStreamEverOpened] = usA(false);
+  const [realFeedReady, setRealFeedReady] = usA(false);
+  const [lastEventId, setLastEventId] = usA(null);
+  const lastEventIdRef = urA(null);
+  const streamEverOpenedRef = urA(false);
+  const realFeedReadyRef = urA(false);
+
   ueA(() => {
-    const t = setInterval(() => {
-      const templates = [
-        { kind: 'tool.invoked',   source: 'hermes-primary', title: 'grep_search \u00b7 "bounded_retry"', tone: '',    detail: 'scanning backend/' },
-        { kind: 'agent.message',  source: 'indexer-docs',    title: 'Embedding batch committed', tone: 'ok',   detail: '128 docs \u00b7 3.2s' },
-        { kind: 'gateway.heartbeat',source:'watchdog',       title: 'Gateway healthy \u00b7 138ms p99', tone: 'ok', detail: 'all probes passing' },
-        { kind: 'tool.invoked',   source: 'scout-salic',     title: 'fetch_url \u00b7 salic.cultura.gov.br', tone: '', detail: '203 \u00b7 412ms' },
-      ];
-      const e = templates[Math.floor(Math.random() * templates.length)];
-      const now = new Date();
-      const t2 = `${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}:${String(now.getUTCSeconds()).padStart(2,'0')}`;
-      const id = 'ev_' + Math.random().toString(36).slice(2, 8);
-      const nev = { ...e, t: t2, _id: id };
-      setLiveEvents(prev => [nev, ...prev].slice(0, 14));
-      setNewIds(prev => { const s = new Set(prev); s.add(id); return s; });
-      setTimeout(() => setNewIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 500);
-    }, 3200);
-    return () => clearInterval(t);
+    let cancelled = false;
+    let source = null;
+
+    function eventFingerprint(event, index) {
+      return event._id || [event.kind || 'event', event.source || 'runtime', event.t || '—', event.title || `event-${index + 1}`, event.detail || '', index].join('|');
+    }
+
+    function semanticFingerprint(event, index) {
+      return [event.kind || 'event', event.source || 'runtime', event.t || '—', event.title || `event-${index + 1}`, event.detail || ''].join('|');
+    }
+
+    function normalizeSseEvent(messageEvent) {
+      let parsed;
+      try {
+        parsed = JSON.parse(messageEvent.data || '{}');
+      } catch {
+        return null;
+      }
+
+      if (messageEvent.type === 'activity') {
+        const eventId = messageEvent.lastEventId || parsed.id || null;
+        return {
+          _id: eventId ? `evt_${eventId}` : [parsed.kind || 'event', parsed.source || 'runtime', parsed.t || '—', parsed.title || messageEvent.type, parsed.detail || ''].join('|'),
+          eventId: eventId ? String(eventId) : null,
+          t: parsed.t ? formatSaoPauloTime(new Date(parsed.t)).replace(' BRT', '') : formatSaoPauloTime(new Date()).replace(' BRT', ''),
+          kind: parsed.kind || 'event',
+          source: parsed.source || 'runtime',
+          title: parsed.title || messageEvent.type,
+          tone: parsed.tone || '',
+          detail: parsed.detail || '',
+        };
+      }
+
+      const recordedAt = parsed.recorded_at || parsed.payload?.recorded_at || parsed.payload?.data?.recorded_at || null;
+      const eventId = messageEvent.lastEventId || parsed.event_id || parsed.id || null;
+      const envelopePayload = parsed.payload && typeof parsed.payload === 'object' ? parsed.payload : parsed;
+      const payload = envelopePayload.data && typeof envelopePayload.data === 'object' ? envelopePayload.data : envelopePayload;
+      const title = payload.title || payload.display_name || payload.session_id || payload.status || messageEvent.type;
+      const detailValue = payload.detail || payload.preview || payload.result || payload.status || payload.data || '';
+      const detail = typeof detailValue === 'string' ? detailValue : JSON.stringify(detailValue);
+
+      return {
+        _id: eventId ? `evt_${eventId}` : [messageEvent.type, parsed.source || payload.source || 'runtime', recordedAt || 'now', title, detail].join('|'),
+        eventId: eventId ? String(eventId) : null,
+        t: recordedAt ? formatSaoPauloTime(new Date(recordedAt)).replace(' BRT', '') : formatSaoPauloTime(new Date()).replace(' BRT', ''),
+        kind: messageEvent.type || 'event',
+        source: parsed.source || payload.source || 'runtime',
+        title,
+        tone: (messageEvent.type || '').includes('error') ? 'err' : ((messageEvent.type || '').includes('approval') ? 'acc' : ((payload.status || '').includes('fail') ? 'err' : '')),
+        detail,
+      };
+    }
+
+    function applyIncomingEvent(nextEvent) {
+      if (!nextEvent || cancelled) return;
+      if (nextEvent.eventId) {
+        lastEventIdRef.current = nextEvent.eventId;
+        setLastEventId(nextEvent.eventId);
+      }
+      setLiveEvents((prev) => {
+        const existing = new Set(prev.map((event, index) => semanticFingerprint(event, index)));
+        const nextFingerprint = semanticFingerprint(nextEvent, 0);
+        if (existing.has(nextFingerprint)) {
+          return prev;
+        }
+        return [nextEvent, ...prev].slice(0, 14);
+      });
+      setNewIds((prevNew) => {
+        const next = new Set(prevNew);
+        next.add(nextEvent._id);
+        return next;
+      });
+      window.setTimeout(() => {
+        setNewIds((prevNew) => {
+          const next = new Set(prevNew);
+          next.delete(nextEvent._id);
+          return next;
+        });
+      }, 1200);
+      realFeedReadyRef.current = true;
+      setRealFeedReady(true);
+    }
+
+    function connectStream(afterId = null) {
+      if (cancelled || typeof EventSource === 'undefined') return;
+      const query = afterId ? `?after_id=${encodeURIComponent(afterId)}` : '';
+      const streamUrl = `/ops/stream${query}`;
+      source = new EventSource(streamUrl, { withCredentials: true });
+
+      source.onopen = () => {
+        if (!cancelled) {
+          streamEverOpenedRef.current = true;
+          setStreamConnected(true);
+          setStreamEverOpened(true);
+        }
+      };
+
+      ['activity'].forEach((eventName) => {
+        source.addEventListener(eventName, (messageEvent) => {
+          const normalized = normalizeSseEvent(messageEvent);
+          applyIncomingEvent(normalized);
+        });
+      });
+
+      source.onerror = () => {
+        if (cancelled) return;
+        if (source && source.readyState === EventSource.CLOSED) {
+          setStreamConnected(streamEverOpenedRef.current || realFeedReadyRef.current);
+          return;
+        }
+        setStreamConnected(false);
+      };
+    }
+
+    connectStream(lastEventIdRef.current);
+    return () => {
+      cancelled = true;
+      if (source) source.close();
+    };
   }, []);
+
+  const liveActivitySub = realFeedReady
+    ? 'last 14 events · live stream'
+    : (streamConnected ? 'last 14 events · awaiting first live activity' : 'connecting to live stream');
+  const liveActivityTone = realFeedReady ? 'ok' : (streamConnected ? 'acc' : 'warn');
+  const liveActivityBadge = realFeedReady ? 'REAL' : (streamConnected ? 'CONNECTED' : 'SYNCING');
 
   return (
     <div className="hc-flex-col" style={{ gap: 16 }}>
@@ -34,11 +155,13 @@ function Dashboard({ data, setActive }) {
       </div>
 
       <div className="hc-grid hc-grid-2-1">
-        <Panel title="Live activity" icon="activity" sub="last 14 events \u00b7 streaming"
-          actions={[<span key="r" className="hc-tag ok"><Icon name="radio" size={10} />&nbsp;LIVE</span>,
+        <Panel title="Live activity" icon="activity" sub={liveActivitySub}
+          actions={[<span key="r" className={`hc-tag ${liveActivityTone}`}><Icon name="radio" size={10} />&nbsp;{liveActivityBadge}</span>,
                     <button key="b" className="hc-btn sm" onClick={() => setActive('activity')}>Open timeline</button>]}>
           <div className="hc-feed" style={{ margin: -14 }}>
-            {liveEvents.map((e, i) => <FeedItem key={(e._id || i) + '_' + i} event={e} isNew={newIds.has(e._id)} />)}
+            {liveEvents.length
+              ? liveEvents.map((e, i) => <FeedItem key={(e._id || i) + '_' + i} event={e} isNew={newIds.has(e._id)} />)
+              : <div className="hc-empty"><Icon name="activity" size={32} /><div className="msg">Waiting for real events…</div></div>}
           </div>
         </Panel>
 
@@ -161,7 +284,7 @@ function AgentsPage({ data }) {
             <dt>role</dt><dd>{sel.role}</dd>
             <dt>sessions</dt><dd className="hc-mono">{sel.sessions}</dd>
             <dt>last seen</dt><dd className="hc-mono">{sel.lastSeen}</dd>
-            <dt>created</dt><dd className="hc-mono">2026-01-14 09:22 UTC</dd>
+            <dt>created</dt><dd className="hc-mono">2026-01-14 06:22 BRT</dd>
             <dt>capabilities</dt><dd><Tag>tools</Tag> <Tag>memory</Tag> <Tag>mcp</Tag> {sel.role==='orchestrator' && <Tag tone="accent">subagents</Tag>}</dd>
           </dl>
           <div className="hc-divider" />
@@ -293,12 +416,12 @@ function ActivityPage({ data }) {
           <>
             <div className="hc-flex" style={{ gap: 8, marginBottom: 12 }}>
               <Tag tone={selected.tone}>{selected.kind}</Tag>
-              <span className="hc-mono hc-muted" style={{ fontSize: 12 }}>{selected.t} UTC {'\u00b7'} {selected.source}</span>
+              <span className="hc-mono hc-muted" style={{ fontSize: 12 }}>{selected.t} BRT {'\u00b7'} {selected.source}</span>
             </div>
             <h3 style={{ margin: 0, fontSize: 15 }}>{selected.title}</h3>
             <p className="hc-text-sec" style={{ marginTop: 6 }}>{selected.detail}</p>
             <div className="hc-divider" />
-            <pre className="hc-pre">{JSON.stringify({ kind: selected.kind, source: selected.source, recorded_at: '2026-04-17T' + selected.t + 'Z', payload: { title: selected.title, detail: selected.detail } }, null, 2)}</pre>
+            <pre className="hc-pre">{JSON.stringify({ kind: selected.kind, source: selected.source, recorded_at: `2026-04-17T${selected.t}-03:00`, timezone: 'America/Sao_Paulo', payload: { title: selected.title, detail: selected.detail } }, null, 2)}</pre>
           </>
         ) : (
           <div className="hc-empty"><Icon name="activity" size={32} /><div className="msg">Pick an event from the timeline.</div></div>

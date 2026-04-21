@@ -1,39 +1,24 @@
 /* Hermes Command Center — Layout (Sidebar + Topbar) */
-const { useState, useEffect, useRef, useMemo } = React;
-
 const NAV = [
-  { sector: 'Vis\u00e3o Geral', items: [
+  { sector: 'Core ops', items: [
     { key: 'dashboard', icon: 'dashboard', label: 'Dashboard', badge: null },
     { key: 'activity',  icon: 'activity',  label: 'Atividade', badge: '12' },
     { key: 'usage',     icon: 'usage',     label: 'Usage',     badge: null },
-  ]},
-  { sector: 'Agentes', items: [
     { key: 'agents',    icon: 'agents',    label: 'Agentes',   badge: '6' },
     { key: 'chat',      icon: 'chat',      label: 'Conversar', badge: null },
-    { key: 'sessions',  icon: 'sessions',  label: 'Sess\u00f5es',   badge: '3' },
-  ]},
-  { sector: 'Trabalhos', items: [
-    { key: 'tasks',     icon: 'tasks',     label: 'Tarefas',   badge: null },
+    { key: 'sessions',  icon: 'sessions',  label: 'Sessões',   badge: '3' },
     { key: 'cron',      icon: 'cron',      label: 'Crons',     badge: '!' },
-    { key: 'calendar',  icon: 'calendar',  label: 'Calend\u00e1rio',badge: null },
-    { key: 'integrations',icon:'integrations',label: 'Integra\u00e7\u00f5es',badge: null },
+    { key: 'doctor',    icon: 'doctor',    label: 'Doctor',    badge: null },
+    { key: 'logs',      icon: 'logs',      label: 'Logs',      badge: null },
+  ]},
+  { sector: 'Workspace', items: [
+    { key: 'memory',    icon: 'memory',    label: 'Memória',   badge: null },
+    { key: 'documents', icon: 'documents', label: 'Documentos',badge: null },
+    { key: 'channels',  icon: 'channels',  label: 'Canais',    badge: null },
     { key: 'skill',     icon: 'skill',     label: 'Skills',    badge: null },
   ]},
-  { sector: 'Conhecimento', items: [
-    { key: 'memory',    icon: 'memory',    label: 'Mem\u00f3ria',   badge: null },
-    { key: 'documents', icon: 'documents', label: 'Documentos',badge: null },
-    { key: 'database',  icon: 'database',  label: 'Database',  badge: null },
-    { key: 'apis',      icon: 'apis',      label: "API's",     badge: null },
-    { key: 'channels',  icon: 'channels',  label: 'Canais',    badge: null },
-    { key: 'hooks',     icon: 'hooks',     label: 'Hooks',     badge: null },
-    { key: 'preferences',icon:'preferences',label: 'Prefer\u00eancias',badge: null },
-  ]},
-  { sector: 'Sistema', items: [
-    { key: 'doctor',    icon: 'doctor',    label: 'Doctor',    badge: null },
+  { sector: 'Advanced', items: [
     { key: 'terminal',  icon: 'terminal',  label: 'Terminal',  badge: null },
-    { key: 'logs',      icon: 'logs',      label: 'Logs',      badge: null },
-    { key: 'tailscale', icon: 'tailscale', label: 'Tailscale', badge: null },
-    { key: 'config',    icon: 'config',    label: 'Config',    badge: null },
   ]},
 ];
 
@@ -65,7 +50,7 @@ const PAGE_META = {
 
 function Sidebar({ active, onNav, collapsed, setCollapsed, mobileOpen }) {
   return (
-    <aside className={`hc-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
+    <aside id="hc-sidebar-nav" className={`hc-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
       <div className="hc-brand">
         <div className="hc-brand-mark" title="Hermes">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,13 +99,21 @@ function Sidebar({ active, onNav, collapsed, setCollapsed, mobileOpen }) {
   );
 }
 
-function Topbar({ active, onRefresh, onNav, gatewayOnline, setGatewayOnline, clock, onToggleMobile }) {
+function Topbar({ active, onRefresh, gatewayOnline, setGatewayOnline, clock, onToggleMobile, mobileOpen }) {
   const meta = PAGE_META[active] || {};
   return (
     <header className="hc-topbar">
-      <button className="hc-mobile-toggle" onClick={onToggleMobile} aria-label="Menu">
+      <button
+        className="hc-mobile-toggle"
+        onClick={onToggleMobile}
+        aria-label="Menu"
+        aria-expanded={mobileOpen ? 'true' : 'false'}
+        aria-controls="hc-sidebar-nav"
+      >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
         </svg>
       </button>
       <div className="hc-breadcrumb">

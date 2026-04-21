@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from cost_controls import cost_circuit_breaker_store
 from http_api import route
 from usage_surface import usage_surface
 
@@ -10,6 +9,7 @@ def _build_panel_usage(summary: dict) -> dict:
     breaker = summary.get('circuit_breaker', {})
     breaker_config = breaker.get('config', {})
     agents = summary.get('agent_breakdown', [])
+    load_smoke = summary.get('load_smoke', {})
 
     budget = breaker_config.get('max_actual_cost_usd')
     if not isinstance(budget, (int, float)) or budget <= 0:
@@ -24,7 +24,7 @@ def _build_panel_usage(summary: dict) -> dict:
             'cost': totals.get('actual_cost_usd', 0.0),
             'budget': budget,
             'sessions': totals.get('session_count', 0),
-            'requests': totals.get('session_count', 0),
+            'requests': load_smoke.get('requests_executed', totals.get('session_count', 0)),
         },
         'breaker': {
             'tripped': breaker.get('tripped', False),

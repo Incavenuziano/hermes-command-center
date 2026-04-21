@@ -14,6 +14,7 @@ from http_api import AuthenticationRequiredError, RequestValidationError, route
 from read_only_mode import read_only_mode_store
 from runtime_adapter import runtime_adapter
 
+
 _SERVER_START = time.monotonic()
 _APPROVAL_RISK_BY_KIND = {'db.migrate': 'high', 'shell.run': 'low', 'file.edit': 'medium'}
 
@@ -24,17 +25,17 @@ def _relative_time(iso: str | None) -> str:
     try:
         dt = datetime.fromisoformat(str(iso).replace('Z', '+00:00'))
         seconds = int((datetime.now(timezone.utc) - dt).total_seconds())
-        if seconds < 0:
-            return 'just now'
-        if seconds < 60:
-            return f'{seconds}s ago'
-        if seconds < 3600:
-            return f'{seconds // 60}m ago'
-        if seconds < 86400:
-            return f'{seconds // 3600}h ago'
-        return f'{seconds // 86400}d ago'
     except Exception:
         return str(iso)
+    if seconds < 0:
+        return 'just now'
+    if seconds < 60:
+        return f'{seconds}s ago'
+    if seconds < 3600:
+        return f'{seconds // 60}m ago'
+    if seconds < 86400:
+        return f'{seconds // 3600}h ago'
+    return f'{seconds // 86400}d ago'
 
 
 def _format_time_short(iso: str | None) -> str:
@@ -47,71 +48,7 @@ def _format_time_short(iso: str | None) -> str:
         return str(iso)
 
 
-def _map_agents_for_panel(agents: list[dict], sessions: list[dict]) -> list[dict]:
-    agent_stats: dict[str, dict] = {}
-    for s in sessions:
-        aid = str(s.get('agent_id') or 'agent-main')
-        stats = agent_stats.setdefault(aid, {'sessions': 0, 'tokens': 0, 'cost': 0.0, 'model': None})
-        stats['sessions'] += 1
-        stats['tokens'] += int(s.get('input_tokens') or 0) + int(s.get('output_tokens') or 0) + int(s.get('reasoning_tokens') or 0)
-        stats['cost'] += float(s.get('actual_cost_usd') or 0.0)
-        if s.get('model'):
-            stats['model'] = s['model']
-    result = []
-    for agent in agents:
-        aid = agent.get('agent_id', '')
-        stats = agent_stats.get(aid, {})
-        result.append({
-            'id': aid,
-            'role': agent.get('role', 'worker'),
-            'status': agent.get('status', 'unknown'),
-            'lastSeen': _relative_time(agent.get('last_seen_at')),
-            'model': stats.get('model') or agent.get('model') or 'unknown',
-            'sessions': stats.get('sessions', 0),
-            'tokens24h': stats.get('tokens', 0),
-            'cost24h': round(stats.get('cost', 0.0), 2),
-            'avatar': aid[:2].upper() if aid else '??',
-        })
-    return result
-
-
-def _map_sessions_for_panel(sessions: list[dict]) -> list[dict]:
-    result = []
-    for s in sessions:
-        tokens = int(s.get('input_tokens') or 0) + int(s.get('output_tokens') or 0) + int(s.get('reasoning_tokens') or 0)
-        result.append({
-            'id': s.get('session_id', ''),
-            'agent': str(s.get('agent_id') or s.get('source') or 'agent-main'),
-            'status': s.get('status', 'unknown'),
-            'platform': s.get('platform') or s.get('source') or 'cli',
-            'title': s.get('title') or s.get('display_name') or s.get('session_id', ''),
-            'msgs': 0,
-            'started': _format_time_short(s.get('started_at')),
-            'tokens': tokens,
-        })
-    return result
-
-
-def _event_title(kind: str, source: str, data: dict) -> str:
-    if kind == 'system.bootstrap':
-        return 'System bootstrap \u00b7 ready'
-    if kind.startswith('approval.'):
-        action = kind.split('.', 1)[1] if '.' in kind else kind
-        return f'Approval {action} \u00b7 {data.get("approval_id", "")}'
-    if kind.startswith('session.'):
-        action = kind.split('.', 1)[1] if '.' in kind else kind
-        return f'Session {action} \u00b7 {data.get("session_id", "")}'
-    if kind.startswith('process.'):
-        action = kind.split('.', 1)[1] if '.' in kind else kind
-        return f'Process {action} \u00b7 {data.get("process_id", "")}'
-    if kind.startswith('cron.'):
-        action = kind.split('.', 1)[1] if '.' in kind else kind
-        name = data.get('name') or data.get('job_id', '')
-        return f'{name} \u00b7 {action}'
-    return f'{kind} \u00b7 {source}'
-
-
-def _event_tone(kind: str) -> str:
+def _map_event_tone(kind: str) -> str:
     if 'error' in kind or 'fail' in kind or 'missed' in kind:
         return 'err'
     if 'warn' in kind or 'threshold' in kind or 'degraded' in kind:
@@ -121,6 +58,25 @@ def _event_tone(kind: str) -> str:
     if 'requested' in kind or 'created' in kind or 'started' in kind:
         return 'acc'
     return ''
+
+
+def _event_title(kind: str, source: str, data: dict) -> str:
+    if kind == 'system.bootstrap':
+        return 'System bootstrap · ready'
+    if kind.startswith('approval.'):
+        action = kind.split('.', 1)[1]
+        return f"Approval {action} · {data.get('approval_id', '')}"
+    if kind.startswith('session.'):
+        action = kind.split('.', 1)[1]
+        return f"Session {action} · {data.get('session_id', '')}"
+    if kind.startswith('process.'):
+        action = kind.split('.', 1)[1]
+        return f"Process {action} · {data.get('process_id', '')}"
+    if kind.startswith('cron.'):
+        action = kind.split('.', 1)[1]
+        name = data.get('name') or data.get('job_id', '')
+        return f'{name} · {action}'
+    return f'{kind} · {source}'
 
 
 def _event_detail(data: dict) -> str:
@@ -133,39 +89,62 @@ def _event_detail(data: dict) -> str:
             parts.append(val)
         elif isinstance(val, (int, float)):
             parts.append(f'{key}: {val}')
-    return ' \u00b7 '.join(parts[:3]) if parts else ''
+    return ' · '.join(parts[:3]) if parts else ''
 
 
 def _map_events_for_panel(events: list[dict]) -> list[dict]:
-    result = []
-    for e in events:
-        kind = str(e.get('kind', ''))
-        source = str(e.get('source', ''))
-        data = e.get('data', {}) if isinstance(e.get('data'), dict) else {}
-        result.append({
-            't': _format_time_short(e.get('at')),
+    items = []
+    for event in events:
+        kind = str(event.get('kind', ''))
+        source = str(event.get('source', ''))
+        data = event.get('data', {}) if isinstance(event.get('data'), dict) else {}
+        items.append({
+            't': _format_time_short(event.get('at')),
             'kind': kind,
             'source': source,
             'title': _event_title(kind, source, data),
-            'tone': _event_tone(kind),
+            'tone': _map_event_tone(kind),
             'detail': _event_detail(data),
         })
-    return result
+    return items
 
 
-def _map_cron_for_panel(jobs: list[dict]) -> list[dict]:
-    result = []
-    for j in jobs:
-        result.append({
-            'id': j.get('job_id', ''),
-            'name': j.get('name', ''),
-            'schedule': j.get('schedule', 'manual'),
-            'next': j.get('next_run_at') or 'unknown',
-            'last': j.get('last_status') or 'unknown',
-            'enabled': bool(j.get('enabled', False)),
-            'duration': '\u2014',
+def _session_totals(sessions: list[dict]) -> tuple[int, float, str]:
+    total_tokens = 0
+    total_cost = 0.0
+    preferred_model = 'unknown'
+    for session in sessions:
+        total_tokens += int(session.get('input_tokens') or 0) + int(session.get('output_tokens') or 0) + int(session.get('reasoning_tokens') or 0)
+        total_cost += float(session.get('actual_cost_usd') or 0.0)
+        if preferred_model == 'unknown' and session.get('model'):
+            preferred_model = str(session.get('model'))
+    return total_tokens, round(total_cost, 4), preferred_model
+
+
+def _map_sessions_brief(sessions: list[dict]) -> list[dict]:
+    items = []
+    for session in sessions:
+        tokens = int(session.get('input_tokens') or 0) + int(session.get('output_tokens') or 0) + int(session.get('reasoning_tokens') or 0)
+        items.append({
+            'id': session.get('session_id', ''),
+            'agent': str(session.get('agent_id') or session.get('source') or 'agent-main'),
+            'status': session.get('status', 'unknown'),
+            'platform': session.get('platform') or session.get('source') or 'cli',
+            'title': session.get('title') or session.get('display_name') or session.get('session_id', ''),
+            'started': _format_time_short(session.get('started_at')),
+            'tokens': tokens,
         })
-    return result
+    return items
+
+
+def _server_uptime_string() -> str:
+    uptime_secs = int(time.monotonic() - _SERVER_START)
+    hours, remainder = divmod(uptime_secs, 3600)
+    minutes = remainder // 60
+    if hours >= 24:
+        days, hours = divmod(hours, 24)
+        return f'{days}d {hours}h {minutes}m'
+    return f'{hours}h {minutes}m'
 
 
 def _map_approval_for_panel(item: dict) -> dict:
@@ -182,19 +161,11 @@ def _map_approval_for_panel(item: dict) -> dict:
 
 
 def _system_health_panel() -> dict:
-    uptime_secs = int(time.monotonic() - _SERVER_START)
-    hours, remainder = divmod(uptime_secs, 3600)
-    minutes = remainder // 60
-    if hours >= 24:
-        days, hours = divmod(hours, 24)
-        uptime_str = f'{days}d {hours}h {minutes}m'
-    else:
-        uptime_str = f'{hours}h {minutes}m'
     return {
         'env': ENV,
         'bind': f'{HOST}:{PORT}',
         'auth': 'passkey + loopback' if AUTH_ENABLED else 'local-trusted',
-        'uptime': uptime_str,
+        'uptime': _server_uptime_string(),
         'version': f'{SERVICE_NAME}/0.4',
     }
 
@@ -250,24 +221,71 @@ def ops_overview(handler) -> None:
     _require_authenticated(handler)
     overview = derived_state_store.overview()
     pending = approvals_store.list_items()
-    mapped_approvals = [
+    overview['approvals'] = [
         _map_approval_for_panel(item)
         for item in pending.get('items', [])
         if item.get('status') == 'pending'
     ]
-    overview['approvals'] = mapped_approvals
     overview['system_health'] = _system_health_panel()
-    panel = {
-        'agents': _map_agents_for_panel(overview.get('agents', []), overview.get('sessions', [])),
-        'sessions': _map_sessions_for_panel(overview.get('sessions', [])),
-        'events': _map_events_for_panel(overview.get('events', [])),
-        'approvals': mapped_approvals,
-        'system_health': overview['system_health'],
-        'service': overview.get('service'),
-        'counts': overview.get('counts'),
-        'generated_at': overview.get('generated_at'),
+    handler.send_panel_data(overview)
+
+
+@route('GET', '/ops/logs', allow=('GET',))
+def ops_logs(handler) -> None:
+    _require_authenticated(handler)
+    limit_raw = (handler.query_params.get('limit') or [None])[0]
+    limit = 50
+    if limit_raw is not None:
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
+    events = derived_state_store.event_feed(limit=limit)
+    audit = audit_log_store.list_entries(limit=limit)
+    items = _map_events_for_panel(events.get('items', []))
+    for entry in audit.get('items', []):
+        items.append({
+            't': _format_time_short(entry.get('recorded_at')),
+            'kind': f'audit.{entry.get("action_type", "unknown")}',
+            'source': entry.get('actor_user', 'system'),
+            'title': f'{entry.get("action_type", "")} · {entry.get("target_type", "")}:{entry.get("target_id", "")}',
+            'tone': 'ok' if entry.get('result') in ('enabled', 'executed', 'ok') else '',
+            'detail': entry.get('result', ''),
+        })
+    items.sort(key=lambda item: item.get('t', ''), reverse=True)
+    handler.send_panel_data(
+        {'events': events, 'audit': audit},
+        panel={'items': items[:limit], 'count': len(items)},
+    )
+
+
+@route('GET', '/ops/agent', allow=('GET',))
+def ops_agent_detail(handler) -> None:
+    _require_authenticated(handler)
+    agent_id = (handler.query_params.get('agent_id') or [None])[0]
+    if not agent_id:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='agent_id is required', details={'field': 'agent_id'})
+    overview = derived_state_store.overview()
+    overview_agent = next((item for item in overview.get('agents', []) if item.get('agent_id') == agent_id), None)
+    if overview_agent is None:
+        raise RequestValidationError(status=404, code='ops.agent_not_found', message='Agent not found', details={'agent_id': agent_id})
+    sessions = runtime_adapter.list_sessions()
+    agent_sessions = [session for session in sessions if str(session.get('agent_id') or 'agent-main') == agent_id]
+    total_tokens, total_cost, preferred_model = _session_totals(agent_sessions)
+    agent = {
+        'agent_id': agent_id,
+        'id': agent_id,
+        'role': overview_agent.get('role', 'worker'),
+        'status': overview_agent.get('status', 'unknown'),
+        'last_seen_at': overview_agent.get('last_seen_at'),
+        'lastSeen': _relative_time(overview_agent.get('last_seen_at')),
+        'model': preferred_model,
+        'session_count': len(agent_sessions),
+        'total_tokens': total_tokens,
+        'total_cost_usd': total_cost,
+        'sessions': _map_sessions_brief(agent_sessions[:10]),
     }
-    handler.send_panel_data(overview, panel=panel)
+    handler.send_panel_data({'agent': agent}, panel=agent)
 
 
 @route('GET', '/ops/events', allow=('GET',))
@@ -393,7 +411,7 @@ def runtime_cron_jobs(handler) -> None:
     jobs = runtime_adapter.list_cron_jobs()
     handler.send_panel_data(
         {'items': jobs, 'count': len(jobs)},
-        panel={'jobs': _map_cron_for_panel(jobs), 'items': jobs, 'count': len(jobs)},
+        panel={'jobs': jobs, 'items': jobs, 'count': len(jobs)},
     )
 
 
@@ -548,62 +566,3 @@ def ops_cron_control(handler) -> None:
         details={'job': job, 'event_kind': event['kind']},
     )
     handler.send_data({'ok': True, 'job': job, 'event': event, 'audit_entry': audit_entry})
-
-
-@route('GET', '/ops/logs', allow=('GET',))
-def ops_logs(handler) -> None:
-    _require_authenticated(handler)
-    limit_raw = (handler.query_params.get('limit') or [None])[0]
-    limit = 50
-    if limit_raw is not None:
-        try:
-            limit = int(limit_raw)
-        except ValueError as exc:
-            raise RequestValidationError(status=400, code='ops.invalid_request', message='limit must be an integer', details={'field': 'limit'}) from exc
-    events = derived_state_store.event_feed(limit=limit)
-    audit = audit_log_store.list_entries(limit=limit)
-    items = _map_events_for_panel(events.get('items', []))
-    for entry in audit.get('items', []):
-        items.append({
-            't': _format_time_short(entry.get('recorded_at')),
-            'kind': f'audit.{entry.get("action_type", "unknown")}',
-            'source': entry.get('actor_user', 'system'),
-            'title': f'{entry.get("action_type", "")} \u00b7 {entry.get("target_type", "")}:{entry.get("target_id", "")}',
-            'tone': 'ok' if entry.get('result') in ('enabled', 'executed', 'ok') else '',
-            'detail': entry.get('result', ''),
-        })
-    handler.send_panel_data(
-        {'events': events, 'audit': audit},
-        panel={'items': items, 'count': len(items)},
-    )
-
-
-@route('GET', '/ops/agent', allow=('GET',))
-def ops_agent_detail(handler) -> None:
-    _require_authenticated(handler)
-    agent_id = (handler.query_params.get('agent_id') or [None])[0]
-    if not agent_id:
-        raise RequestValidationError(status=400, code='ops.invalid_request', message='agent_id is required', details={'field': 'agent_id'})
-    sessions = runtime_adapter.list_sessions()
-    agent_sessions = [s for s in sessions if str(s.get('agent_id') or 'agent-main') == agent_id]
-    if not agent_sessions:
-        overview_agents = derived_state_store.overview().get('agents', [])
-        match = next((a for a in overview_agents if a.get('agent_id') == agent_id), None)
-        if match is None:
-            raise RequestValidationError(status=404, code='ops.agent_not_found', message='Agent not found', details={'agent_id': agent_id})
-    total_tokens = sum(int(s.get('input_tokens') or 0) + int(s.get('output_tokens') or 0) + int(s.get('reasoning_tokens') or 0) for s in agent_sessions)
-    total_cost = sum(float(s.get('actual_cost_usd') or 0.0) for s in agent_sessions)
-    models = list({s.get('model') for s in agent_sessions if s.get('model')})
-    agent = {
-        'agent_id': agent_id,
-        'id': agent_id,
-        'role': 'main' if agent_id == 'agent-main' else 'worker',
-        'status': 'active' if any(s.get('status') == 'active' for s in agent_sessions) else 'idle',
-        'model': models[0] if models else 'unknown',
-        'models': models,
-        'session_count': len(agent_sessions),
-        'total_tokens': total_tokens,
-        'total_cost_usd': round(total_cost, 4),
-        'sessions': _map_sessions_for_panel(agent_sessions[:10]),
-    }
-    handler.send_panel_data(agent)

@@ -997,7 +997,6 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
    Desktop layout is untouched above 640px.
    ============================================================ */
 
-/* Hamburger toggle — hidden on desktop */
 .hc-mobile-toggle {
   display: none;
   align-items: center;
@@ -1012,91 +1011,113 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
-.hc-mobile-toggle svg { width: 20px; height: 20px; display: block; }
 
-/* Overlay backdrop — hidden on desktop */
+.hc-mobile-toggle svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 .hc-sidebar-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0, 0, 0, 0.55);
   z-index: 49;
   -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 640px) {
-  /* Show hamburger */
   .hc-mobile-toggle { display: flex; }
 
-  /* Shell becomes single column, sidebar removed from grid flow */
   .hc-shell,
   .hc-shell[data-collapsed="true"] {
     grid-template-columns: 1fr;
   }
 
-  /* Sidebar: off-canvas drawer */
   .hc-sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 280px;
+    width: min(280px, calc(100vw - 24px));
     height: 100vh;
     height: 100dvh;
     z-index: 50;
     transform: translateX(-100%);
-    transition: transform var(--t-med);
+    transition: transform var(--t-med), box-shadow var(--t-med);
     box-shadow: none;
   }
+
   .hc-sidebar.mobile-open {
     transform: translateX(0);
-    box-shadow: 8px 0 32px rgba(0,0,0,0.4);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
   }
 
-  /* Always show full sidebar content when open on mobile */
   .hc-shell[data-collapsed="true"] .hc-brand-text,
   .hc-shell[data-collapsed="true"] .hc-nav-item .label,
   .hc-shell[data-collapsed="true"] .hc-nav-item .badge,
   .hc-shell[data-collapsed="true"] .hc-operator-text,
   .hc-shell[data-collapsed="true"] .hc-nav-sector h3 {
-    display: revert;
+    display: initial;
     visibility: visible;
     height: auto;
-    margin: revert;
+    margin: 0 0 6px;
     border: none;
   }
+
   .hc-shell[data-collapsed="true"] .hc-nav-item {
     justify-content: flex-start;
-    padding: 9px 8px;
+    padding: 10px 8px;
   }
+
   .hc-shell[data-collapsed="true"] .hc-sidebar-footer {
     flex-direction: row;
   }
 
-  /* Hide collapse button on mobile — not needed */
   .hc-collapse-btn { display: none; }
 
-  /* Backdrop visible when sidebar open */
-  .hc-sidebar-backdrop.visible {
-    display: block;
-  }
+  .hc-sidebar-backdrop.visible { display: block; }
 
-  /* Topbar adjustments */
   .hc-topbar {
     padding: 8px 12px;
     gap: 8px;
     min-height: 48px;
   }
-  .hc-search { display: none; }
-  .hc-topbar .hc-mono { display: none; }
-  .hc-status-pill span:not(.dot) { display: none; }
-  .hc-status-pill { padding: 4px 6px; min-width: 0; gap: 0; }
-  .hc-breadcrumb { font-size: 12px; }
-  .hc-breadcrumb span:first-child { display: none; }
-  .hc-breadcrumb .sep { display: none; }
-  .hc-breadcrumb .cur { font-size: 14px; }
 
-  /* Page content */
-  .hc-page { padding: 12px; }
+  .hc-search,
+  .hc-topbar .hc-mono {
+    display: none;
+  }
+
+  .hc-status-pill span:not(.dot) { display: none; }
+
+  .hc-status-pill {
+    padding: 4px 6px;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .hc-breadcrumb {
+    font-size: 12px;
+    min-width: 0;
+  }
+
+  .hc-breadcrumb span:first-child,
+  .hc-breadcrumb .sep {
+    display: none;
+  }
+
+  .hc-breadcrumb .cur {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hc-page {
+    padding: 12px;
+  }
+
   .hc-page-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1104,39 +1125,56 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
     margin-bottom: 14px;
     padding-bottom: 12px;
   }
-  .hc-page-title h1 { font-size: 18px; }
-  .hc-page-actions { flex-wrap: wrap; gap: 6px; }
-  .hc-page-actions .hc-btn.sm { font-size: 11px; padding: 4px 8px; }
 
-  /* All grids collapse to single column */
-  .hc-grid-4, .hc-grid-3, .hc-grid-2, .hc-grid-2-1, .hc-grid-1-2 {
+  .hc-page-title h1 { font-size: 18px; }
+
+  .hc-page-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hc-page-actions .hc-btn.sm {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .hc-grid-4,
+  .hc-grid-3,
+  .hc-grid-2,
+  .hc-grid-2-1,
+  .hc-grid-1-2 {
     grid-template-columns: 1fr;
   }
-  .hc-span-2, .hc-span-3 { grid-column: span 1; }
+
+  .hc-span-2,
+  .hc-span-3 {
+    grid-column: span 1;
+  }
+
   .hc-grid { gap: 12px; }
   .hc-split { grid-template-columns: 1fr; height: auto; }
 
-  /* Panels */
   .hc-panel { border-radius: var(--r-md); }
   .hc-panel-body { padding: 10px; }
   .hc-panel-head { padding: 10px 12px; }
 
-  /* Tables scroll horizontally */
   .hc-table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  .hc-table { min-width: 560px; }
-  .hc-table th, .hc-table td { padding: 8px 10px; font-size: 12px; }
 
-  /* Stat cards */
+  .hc-table { min-width: 560px; }
+
+  .hc-table th,
+  .hc-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
   .hc-stat { padding: 12px; }
   .hc-stat .val { font-size: 22px; }
-
-  /* Bigger touch targets for nav items */
   .hc-nav-item { padding: 10px 8px; font-size: 14px; }
 
-  /* Tweaks panel fullscreen */
   .hc-tweaks {
     width: 100%;
     right: 0;
@@ -1145,12 +1183,7 @@ button { cursor: pointer; background: none; border: none; padding: 0; }
     overflow-y: auto;
   }
 
-  /* Approval cards stack better */
   .hc-approval { padding: 10px; }
-
-  /* Chart responsive */
   .hc-chart { height: 100px; }
-
-  /* Empty state */
   .hc-empty { padding: 24px; }
 }

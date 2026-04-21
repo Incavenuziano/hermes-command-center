@@ -1,5 +1,5 @@
 /* Hermes Command Center — App root, router, Tweaks panel */
-const { useState: usApp, useEffect: ueApp, useMemo: umApp } = React;
+const { useState: usApp, useEffect: ueApp } = React;
 
 const TWEAK_DEFAULTS = {
   "theme": "premium",
@@ -7,13 +7,15 @@ const TWEAK_DEFAULTS = {
   "fontMono": "geist"
 };
 
+const { formatSaoPauloTime } = window.HC_TIME;
+
 function App() {
   const saved = (() => { try { return JSON.parse(localStorage.getItem('hc_state') || '{}'); } catch { return {}; } })();
   const [active, setActive] = usApp(saved.active || 'dashboard');
   const [theme, setTheme] = usApp(saved.theme || TWEAK_DEFAULTS.theme);
   const [collapsed, setCollapsed] = usApp(TWEAK_DEFAULTS.collapsed);
   const [gatewayOnline, setGatewayOnline] = usApp(true);
-  const [clock, setClock] = usApp('14:32:18 UTC');
+  const [clock, setClock] = usApp(formatSaoPauloTime());
   const [tweaksOn, setTweaksOn] = usApp(false);
   const [mobileMenu, setMobileMenu] = usApp(false);
 
@@ -22,8 +24,7 @@ function App() {
 
   ueApp(() => {
     const t = setInterval(() => {
-      const d = new Date();
-      setClock(`${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')} UTC`);
+      setClock(formatSaoPauloTime());
     }, 1000);
     return () => clearInterval(t);
   }, []);
@@ -34,6 +35,52 @@ function App() {
       else setGatewayOnline(false);
     }).catch(() => {});
   }, []);
+
+  ueApp(() => {
+    if (!mobileMenu) return undefined;
+
+    const media = window.matchMedia('(max-width: 640px)');
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleViewportChange = (event) => {
+      if (!event.matches) {
+        setMobileMenu(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setMobileMenu(false);
+      }
+    };
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleViewportChange);
+    } else if (typeof media.addListener === 'function') {
+      media.addListener(handleViewportChange);
+    }
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (typeof media.removeEventListener === 'function') {
+        media.removeEventListener('change', handleViewportChange);
+      } else if (typeof media.removeListener === 'function') {
+        media.removeListener(handleViewportChange);
+      }
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileMenu]);
+
+  const handleMobileNav = (next) => {
+    setActive(next);
+    setMobileMenu(false);
+  };
+
+  const handleToggleMobile = () => {
+    setMobileMenu((open) => !open);
+  };
 
   const data = window.HC_DATA;
   const meta = window.PAGE_META[active] || {};
@@ -69,14 +116,22 @@ function App() {
 
   return (
     <div className="hc-shell" data-collapsed={collapsed ? 'true' : 'false'}>
-      <div className={`hc-sidebar-backdrop${mobileMenu ? ' visible' : ''}`}
-        onClick={() => setMobileMenu(false)} />
-      <Sidebar active={active} onNav={(k) => { setActive(k); setMobileMenu(false); }}
-        collapsed={collapsed} setCollapsed={setCollapsed} mobileOpen={mobileMenu} />
+      <div
+        className={`hc-sidebar-backdrop${mobileMenu ? ' visible' : ''}`}
+        onClick={() => setMobileMenu(false)}
+        aria-hidden={mobileMenu ? 'false' : 'true'}
+      />
+      <Sidebar
+        active={active}
+        onNav={handleMobileNav}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        mobileOpen={mobileMenu}
+      />
       <div className="hc-main">
-        <Topbar active={active} onRefresh={() => window.location.reload()} onNav={setActive}
+        <Topbar active={active} onRefresh={() => window.location.reload()}
           gatewayOnline={gatewayOnline} setGatewayOnline={setGatewayOnline} clock={clock}
-          onToggleMobile={() => setMobileMenu(!mobileMenu)} />
+          onToggleMobile={handleToggleMobile} mobileOpen={mobileMenu} />
         <div className="hc-page">
           <div className="hc-page-header">
             <div className="hc-page-title">

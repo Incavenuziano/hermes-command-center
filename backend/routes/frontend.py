@@ -92,6 +92,9 @@ for _page in _SPA_PAGES:
 _STATIC_PATHS = [
     '/static/styles.css',
     '/static/app.js',
+    '/static/vendor/react.production.min.js',
+    '/static/vendor/react-dom.production.min.js',
+    '/static/vendor/babel.min.js',
     '/static/hermes/data.js',
     '/static/hermes/icons.jsx',
     '/static/hermes/primitives.jsx',
