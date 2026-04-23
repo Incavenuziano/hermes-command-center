@@ -110,6 +110,7 @@ function App() {
       case 'preferences': return <PlaceholderPage title="Prefer\u00eancias" hint="Profiles and rules." />;
       case 'tailscale': return <PlaceholderPage title="Tailscale" hint="Network posture and bind overrides." />;
       case 'config':    return <PlaceholderPage title="Config" hint="Hermes runtime configuration." />;
+      case 'orchestration': return <OrchestrationPage />;
       default:          return <Dashboard data={data} setActive={setActive} />;
     }
   })();

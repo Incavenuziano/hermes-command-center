@@ -72,7 +72,7 @@ _SPA_PAGES = [
     '/memory', '/skills', '/files', '/profiles', '/channels', '/usage',
     '/chat', '/sessions', '/tasks', '/calendar', '/integrations', '/skill',
     '/documents', '/database', '/apis', '/hooks', '/preferences', '/doctor',
-    '/logs', '/tailscale', '/config', '/dashboard',
+    '/logs', '/tailscale', '/config', '/dashboard', '/orchestration',
 ]
 
 for _page in _SPA_PAGES:
@@ -102,6 +102,7 @@ _STATIC_PATHS = [
     '/static/hermes/pages_a.jsx',
     '/static/hermes/pages_b.jsx',
     '/static/hermes/pages_c.jsx',
+    '/static/hermes/pages_d.jsx',
     '/static/hermes/app.jsx',
 ]
 

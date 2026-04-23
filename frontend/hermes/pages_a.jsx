@@ -2,6 +2,24 @@
 const { useState: usA, useEffect: ueA, useMemo: umA, useRef: urA } = React;
 const { formatSaoPauloTime } = window.HC_TIME;
 
+function postJson(path, body) {
+  return fetch(path, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+    .then(async (r) => {
+      if (!r.ok) return null;
+      try {
+        return await r.json();
+      } catch {
+        return null;
+      }
+    })
+    .catch(() => null);
+}
+
 function Dashboard({ data, setActive }) {
   const seedEvents = data.events.slice(0, 14).map((event, index) => ({
     ...event,
@@ -178,8 +196,8 @@ function Dashboard({ data, setActive }) {
                   <div className="hc-mono hc-muted" style={{ fontSize: 11, marginTop: 4 }}>{a.kind} {'\u00b7'} {a.source} {'\u00b7'} {a.at}</div>
                   <div className="hc-text-sec" style={{ fontSize: 12, marginTop: 6 }}>{a.preview}</div>
                   <div className="hc-flex" style={{ marginTop: 8, gap: 6 }}>
-                    <button className="hc-btn sm primary">Approve</button>
-                    <button className="hc-btn sm danger">Deny</button>
+                    <button className="hc-btn sm primary" onClick={() => postJson('/ops/approvals/resolve', { item_id: a.id, decision: 'approve' }).then((r) => { if (r) window.location.reload(); })}>Approve</button>
+                    <button className="hc-btn sm danger" onClick={() => postJson('/ops/approvals/resolve', { item_id: a.id, decision: 'deny' }).then((r) => { if (r) window.location.reload(); })}>Deny</button>
                     <button className="hc-btn sm ghost">Inspect</button>
                   </div>
                 </div>
@@ -235,7 +253,7 @@ function Dashboard({ data, setActive }) {
                   <div className="hc-meta-line">{c.schedule} {'\u00b7'} next {c.next}</div>
                 </div>
                 <Tag tone={c.last === 'err' ? 'err' : c.last === 'warn' ? 'warn' : 'ok'}>{c.last}</Tag>
-                <button className="hc-btn sm ghost"><Icon name={c.enabled ? 'pause' : 'play'} size={12} /></button>
+                <button className="hc-btn sm ghost" onClick={() => postJson('/ops/cron/control', { job_id: c.id, action: c.enabled ? 'pause' : 'resume' }).then((r) => { if (r) window.location.reload(); })}><Icon name={c.enabled ? 'pause' : 'play'} size={12} /></button>
               </div>
             ))}
           </div>

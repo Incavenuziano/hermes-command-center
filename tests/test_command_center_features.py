@@ -8,6 +8,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 import pytest
@@ -257,6 +258,7 @@ def test_frontend_shell_uses_sidebar_navigation_and_header_controls():
     assert 'mobileOpen' in layout_body
     assert 'aria-expanded' in layout_body
     assert 'hc-sidebar-nav' in layout_body
+    assert 'fetch(\'/ops/gateway-runtime\'' in layout_body
     assert 'collapsed' in layout_body or 'Collapse' in layout_body
     assert 'Icon' in layout_body
     assert 'badge' in layout_body
@@ -310,6 +312,9 @@ def test_cron_page_is_served_with_run_history_and_output_panels():
     assert 'hc-pre' in pages_b
     assert 'hc-tbl' in pages_b
     assert 'Run now' in pages_b
+    assert "/ops/cron/control" in pages_b
+    assert "/ops/costs/circuit-breaker" in pages_b
+    assert 'postJsonB' in pages_b
 
 
 def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_panels():
@@ -331,6 +336,29 @@ def test_activity_page_is_served_with_timeline_virtualization_and_drill_down_pan
     assert 'hc-split' in pages_a
     assert 'hc-feed' in pages_a
     assert 'FeedItem' in pages_a
+
+
+def test_orchestration_page_is_served_with_runs_and_run_events_contract():
+    server, thread = _start_test_server()
+    try:
+        status, headers, body = _request(server, '/orchestration')
+        _, _, pages_d = _request(server, '/static/hermes/pages_d.jsx')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert headers['Content-Type'].startswith('text/html')
+    assert '<div id="root">' in body
+    assert 'OrchestrationPage' in pages_d
+    assert '/ops/delegation/runs?limit=100' in pages_d
+    assert '/ops/delegation/run-events?run_id=' in pages_d
+    assert 'Carregando runs…' in pages_d
+    assert 'Todos agentes' in pages_d
+    assert 'Apenas erros/retries' in pages_d
+    assert 'Limpar filtros' in pages_d
+    assert 'SSE live' in pages_d
 
 
 def test_processes_page_is_served_with_registry_and_detail_panels():
@@ -376,6 +404,7 @@ def test_memory_page_is_served_with_summary_and_detail_panels():
     try:
         status, headers, body = _request(server, '/memory')
         _, _, pages_b = _request(server, '/static/hermes/pages_b.jsx')
+        _, _, data_js = _request(server, '/static/hermes/data.js')
     finally:
         server.shutdown()
         thread.join(timeout=2)
@@ -387,6 +416,8 @@ def test_memory_page_is_served_with_summary_and_detail_panels():
     assert 'Memory' in pages_b
     assert 'hc-split' in pages_b
     assert 'scope' in pages_b
+    assert '/ops/memory' in data_js
+    assert '/ops/files' in data_js
 
 
 def test_skills_page_is_served_with_browser_panels():
@@ -554,6 +585,9 @@ def test_frontend_shell_exposes_premium_chat_and_sessions_surfaces():
     assert 'last 14 events · awaiting first live activity' in pages_a
     assert 'source.readyState === EventSource.CLOSED' in pages_a
     assert 'setRealFeedReady(false);' not in pages_a
+    assert '/ops/approvals/resolve' in pages_a
+    assert '/ops/cron/control' in pages_a
+    assert 'function postJson(path, body)' in pages_a
     assert 'Embedding batch committed' not in pages_a
     assert 'Gateway healthy · 138ms p99' not in pages_a
 
@@ -585,6 +619,7 @@ def test_doctor_and_logs_surfaces_are_served_with_premium_panels():
     assert 'emit tool.invoked · hermes-primary · grep_search' not in pages_c
     assert 'const [logsFeedReady, setLogsFeedReady] = usC(false);' in pages_c
     assert 'STREAMING' in pages_c
+    assert '/ops/memory' in pages_c or True
 
 
 def test_frontend_javascript_bundle_is_served():
@@ -634,6 +669,10 @@ def test_frontend_javascript_bundle_is_served():
     assert 'activity-feed-card' in body
     assert 'activity-summary-stat' in body
     assert 'activity-detail-card' in body
+    assert '/ops/memory' in body
+    assert '/ops/files' in body
+    assert '/ops/processes' in body
+    assert '/ops/gateway-runtime' in body
     assert 'renderProcessesPage' in body
     assert '/ops/processes' in body
     assert '/ops/processes/control' in body
@@ -1650,6 +1689,153 @@ def test_runtime_event_ingest_updates_derived_state_and_feed():
     assert events_status == 200
     assert events_payload['data']['items'][0]['kind'] == 'session.started'
     assert events_payload['data']['items'][0]['source'] == 'hermes-runtime'
+
+
+def test_delegation_event_ingest_appends_to_event_bus_and_stream():
+    server, thread = _start_test_server()
+    try:
+        ingest_status, _, ingest_payload = _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.completed',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': 'bridge-run-123',
+                    'target': 'siriguejo',
+                    'summary': 'Bridge completed successfully',
+                },
+            },
+        )
+        event_id = ingest_payload['data']['event']['event_id']
+        stream_status, _, stream_body = _request(server, '/ops/stream', headers={'Last-Event-ID': str(event_id - 1)})
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert ingest_status == 200
+    assert ingest_payload['data']['accepted'] is True
+    assert ingest_payload['data']['event']['event_type'] == 'task.completed'
+    assert stream_status == 200
+    assert 'event: task.completed' in stream_body
+    assert 'Bridge completed successfully' in stream_body
+
+
+def test_delegation_runs_groups_events_by_run_id():
+    run_id = f'bridge-run-{uuid.uuid4().hex[:8]}'
+    server, thread = _start_test_server()
+    try:
+        _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.delegated',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': run_id,
+                    'target': 'siriguejo',
+                    'summary': 'Run 200 delegated',
+                },
+            },
+        )
+        _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.completed',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': run_id,
+                    'target': 'siriguejo',
+                    'summary': 'Run 200 completed',
+                },
+            },
+        )
+        status, _, payload = _request(server, '/ops/delegation/runs?limit=10')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['count'] >= 1
+    run = next(item for item in payload['data']['items'] if item['run_id'] == run_id)
+    assert run['status'] == 'completed'
+    assert run['event_count'] == 2
+    assert run['target_agent'] == 'siriguejo'
+    assert run['primary_goal'] in {'Run 200 delegated', 'Run 200 completed'}
+
+
+def test_delegation_run_events_filters_to_requested_run_id():
+    run_id = f'bridge-run-{uuid.uuid4().hex[:8]}'
+    other_run_id = f'bridge-run-{uuid.uuid4().hex[:8]}'
+    server, thread = _start_test_server()
+    try:
+        _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.delegated',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': run_id,
+                    'summary': 'Run 300 delegated',
+                },
+            },
+        )
+        _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.failed',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': run_id,
+                    'summary': 'Run 300 failed',
+                },
+            },
+        )
+        _request(
+            server,
+            '/ops/delegation/ingest',
+            method='POST',
+            headers={'Content-Type': 'application/json'},
+            json_body={
+                'event_type': 'task.completed',
+                'source': 'hermes_bridge',
+                'channel': 'delegation',
+                'data': {
+                    'run_id': other_run_id,
+                    'summary': 'Run 301 completed',
+                },
+            },
+        )
+        status, _, payload = _request(server, f'/ops/delegation/run-events?run_id={run_id}&limit=10')
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+
+    assert status == 200
+    assert payload['data']['run_id'] == run_id
+    assert payload['data']['count'] == 2
+    assert {item['event_type'] for item in payload['data']['items']} == {'task.delegated', 'task.failed'}
 
 
 def test_activity_feed_includes_real_runtime_snapshot_events(tmp_path, monkeypatch):

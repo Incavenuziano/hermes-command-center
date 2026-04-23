@@ -17,6 +17,9 @@ const NAV = [
     { key: 'channels',  icon: 'channels',  label: 'Canais',    badge: null },
     { key: 'skill',     icon: 'skill',     label: 'Skills',    badge: null },
   ]},
+  { sector: 'Orquestração', items: [
+    { key: 'orchestration', icon: 'orchestration', label: 'Orquestração', badge: null },
+  ]},
   { sector: 'Advanced', items: [
     { key: 'terminal',  icon: 'terminal',  label: 'Terminal',  badge: null },
   ]},
@@ -46,6 +49,7 @@ const PAGE_META = {
   logs:      { title: 'Logs',        sub: 'Structured event log' },
   tailscale: { title: 'Tailscale',   sub: 'Network posture' },
   config:    { title: 'Config',      sub: '' },
+  orchestration: { title: 'Orquestração', sub: 'Delegações Hermes \u2194 OpenClaw \u00b7 timeline ao vivo' },
 };
 
 function Sidebar({ active, onNav, collapsed, setCollapsed, mobileOpen }) {
@@ -142,7 +146,30 @@ function Topbar({ active, onRefresh, gatewayOnline, setGatewayOnline, clock, onT
       </button>
       <button
         className={`hc-btn ${gatewayOnline ? 'danger' : 'primary'}`}
-        onClick={() => setGatewayOnline(!gatewayOnline)}
+        onClick={() => {
+          const action = gatewayOnline ? 'kill' : 'start';
+          fetch('/ops/gateway-runtime', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action }),
+          })
+            .then(async (r) => {
+              if (!r.ok) return null;
+              try {
+                return await r.json();
+              } catch {
+                return null;
+              }
+            })
+            .then((payload) => {
+              const runtime = payload?.data?.runtime || payload?.runtime || null;
+              if (runtime && typeof runtime.running === 'boolean') {
+                setGatewayOnline(runtime.running);
+              }
+            })
+            .catch(() => {});
+        }}
       >
         <Icon name={gatewayOnline ? 'kill' : 'play'} size={14} stroke={2} />
         {gatewayOnline ? 'Kill gateway' : 'Start gateway'}

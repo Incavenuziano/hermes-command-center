@@ -9,6 +9,7 @@ from auth import auth_manager
 from config import AUTH_ENABLED, ENV, HOST, PORT, SERVICE_NAME
 from cron_history import cron_history_store
 from derived_state import derived_state_store
+from event_bus import event_bus_store
 from gateway_runtime import gateway_runtime_store
 from http_api import AuthenticationRequiredError, RequestValidationError, route
 from read_only_mode import read_only_mode_store
@@ -214,6 +215,153 @@ def _require_not_read_only() -> None:
     state = read_only_mode_store.get_state()
     if state.get('enabled'):
         raise RequestValidationError(status=423, code='ops.read_only_mode', message='Read-only mode is enabled', details={'reason': state.get('reason')})
+
+
+def _require_loopback_client(handler) -> None:
+    client_host = str((getattr(handler, 'client_address', ('', 0)) or ('', 0))[0] or '')
+    if client_host not in {'127.0.0.1', '::1', 'localhost'}:
+        raise RequestValidationError(
+            status=403,
+            code='ops.delegation_ingest_forbidden',
+            message='Delegation ingest is restricted to loopback clients',
+            details={'client_host': client_host},
+        )
+
+
+@route('POST', '/ops/delegation/ingest', allow=('POST',))
+def ops_delegation_ingest(handler) -> None:
+    _require_loopback_client(handler)
+    payload = handler.read_json_body()
+    event_type = payload.get('event_type')
+    source = payload.get('source')
+    channel = payload.get('channel') or 'delegation'
+    data = payload.get('data', {})
+
+    if not isinstance(event_type, str) or not event_type:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='event_type is required', details={'field': 'event_type'})
+    if not isinstance(source, str) or not source:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='source is required', details={'field': 'source'})
+    if not isinstance(channel, str) or not channel:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='channel must be a non-empty string', details={'field': 'channel'})
+    if not isinstance(data, dict):
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='data must be an object', details={'field': 'data'})
+
+    event = event_bus_store.append(
+        event_type=event_type,
+        source=source,
+        channel=channel,
+        payload=data,
+    )
+    handler.send_data({'accepted': True, 'event': event})
+
+
+_DELEGATION_HIGH_VALUE = {'task.delegated', 'task.failed', 'task.completed', 'task.blocked', 'human.intervention_requested'}
+
+
+def _parse_bounded_limit(raw_value: str | None, *, default: int = 50, maximum: int = 200) -> int:
+    if raw_value is None:
+        return default
+    try:
+        return max(1, min(int(raw_value), maximum))
+    except ValueError:
+        return default
+
+
+def _parse_optional_int(raw_value: str | None) -> int | None:
+    if raw_value is None:
+        return None
+    try:
+        return int(raw_value)
+    except ValueError:
+        return None
+
+
+def _delegation_events(*, after_id: int | None = None, limit: int = 200) -> list[dict]:
+    all_events = event_bus_store.replay(after_id=after_id, limit=limit)
+    return [e for e in all_events if str(e.get('channel', '')) == 'delegation']
+
+
+def _delegation_run_summary(events: list[dict]) -> list[dict]:
+    runs: dict[str, dict] = {}
+    ordered_run_ids: list[str] = []
+    for event in events:
+        payload = event.get('payload') if isinstance(event.get('payload'), dict) else {}
+        run_id = str(payload.get('run_id') or '').strip()
+        if not run_id:
+            continue
+        if run_id not in runs:
+            ordered_run_ids.append(run_id)
+            runs[run_id] = {
+                'run_id': run_id,
+                'created_at': event.get('recorded_at'),
+                'updated_at': event.get('recorded_at'),
+                'initiator': event.get('source'),
+                'primary_goal': payload.get('summary') or payload.get('objective') or run_id,
+                'status': 'unknown',
+                'target_agent': payload.get('target'),
+                'event_count': 0,
+                'last_event_type': event.get('event_type'),
+                'last_event_id': event.get('event_id'),
+            }
+        run = runs[run_id]
+        run['event_count'] += 1
+        run['updated_at'] = event.get('recorded_at')
+        run['last_event_type'] = event.get('event_type')
+        run['last_event_id'] = event.get('event_id')
+        if not run.get('target_agent') and payload.get('target'):
+            run['target_agent'] = payload.get('target')
+        if not run.get('primary_goal') or run['primary_goal'] == run_id:
+            run['primary_goal'] = payload.get('summary') or payload.get('objective') or run_id
+        event_type = str(event.get('event_type') or '')
+        if event_type == 'task.failed':
+            run['status'] = 'failed'
+        elif event_type == 'task.completed' and run['status'] != 'failed':
+            run['status'] = 'completed'
+        elif event_type == 'task.blocked' and run['status'] not in {'failed', 'completed'}:
+            run['status'] = 'blocked'
+        elif event_type == 'task.delegated' and run['status'] == 'unknown':
+            run['status'] = 'running'
+    ordered_runs = [runs[run_id] for run_id in ordered_run_ids]
+    ordered_runs.sort(key=lambda item: (str(item.get('updated_at') or ''), int(item.get('last_event_id') or 0)), reverse=True)
+    return ordered_runs
+
+
+@route('GET', '/ops/delegation/events', allow=('GET',))
+def ops_delegation_events(handler) -> None:
+    """List recent delegation events from the bridge."""
+    _require_authenticated(handler)
+    limit = _parse_bounded_limit((handler.query_params.get('limit') or [None])[0])
+    after_id = _parse_optional_int((handler.query_params.get('after_id') or [None])[0])
+    delegation_events = _delegation_events(after_id=after_id, limit=200)
+    delegation_events = delegation_events[-limit:]
+    handler.send_data({'items': delegation_events, 'count': len(delegation_events)})
+
+
+@route('GET', '/ops/delegation/runs', allow=('GET',))
+def ops_delegation_runs(handler) -> None:
+    _require_authenticated(handler)
+    limit = _parse_bounded_limit((handler.query_params.get('limit') or [None])[0])
+    runs = _delegation_run_summary(_delegation_events(limit=500))
+    runs = runs[:limit]
+    handler.send_data({'items': runs, 'count': len(runs)})
+
+
+@route('GET', '/ops/delegation/run-events', allow=('GET',))
+def ops_delegation_run_events(handler) -> None:
+    _require_authenticated(handler)
+    run_id = ((handler.query_params.get('run_id') or [None])[0] or '').strip()
+    if not run_id:
+        raise RequestValidationError(status=400, code='ops.invalid_request', message='run_id is required', details={'field': 'run_id'})
+    limit = _parse_bounded_limit((handler.query_params.get('limit') or [None])[0])
+    after_id = _parse_optional_int((handler.query_params.get('after_id') or [None])[0])
+    delegation_events = _delegation_events(after_id=after_id, limit=500)
+    items = []
+    for event in delegation_events:
+        payload = event.get('payload') if isinstance(event.get('payload'), dict) else {}
+        if str(payload.get('run_id') or '') == run_id:
+            items.append(event)
+    items = items[-limit:]
+    handler.send_data({'run_id': run_id, 'items': items, 'count': len(items)})
 
 
 @route('GET', '/ops/overview', allow=('GET',))
